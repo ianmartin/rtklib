@@ -11,6 +11,7 @@
 *           2009/12/12  1.4 support glonass
 *                           add option -h, -a, -l, -x
 *           2010/01/28  1.5 add option -k
+*           2010/08/12  1.6 add option -y implementation
 *-----------------------------------------------------------------------------*/
 #include <stdarg.h>
 #include "rtklib.h"
@@ -150,6 +151,7 @@ int main(int argc, char **argv)
             for (j=0;j<2;j++) pos[j]*=D2R;
             pos2ecef(pos,prcopt.rb);
         }
+        else if (!strcmp(argv[i],"-y")&&i+1<argc) solopt.sstat=atoi(argv[++i]);
         else if (!strcmp(argv[i],"-x")&&i+1<argc) solopt.trace=atoi(argv[++i]);
         else if (*argv[i]=='-') printhelp();
         else if (n<MAXFILE) infile[n++]=argv[i];
