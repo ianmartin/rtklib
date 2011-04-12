@@ -7,15 +7,16 @@
 *     [1] Open Geospatial Consortium Inc., OGC 07-147r2, OGC(R) KML, 2008-04-14
 *
 * version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
-* history : 2007/01/20  1.0 new
-*           2007/03/15  1.1 modify color sequence
-*           2007/04/03  1.2 add geodetic height option
-*                           support input of NMEA GGA sentence
-*                           delete altitude info for track
-*                           add time stamp option
-*                           separate readsol.c file
-*           2009/01/19  1.3 fix bug on display mark with by-q-flag option
-*           2010/05/10  1.4 support api readsolt() change
+* history : 2007/01/20  1.0  new
+*           2007/03/15  1.1  modify color sequence
+*           2007/04/03  1.2  add geodetic height option
+*                            support input of NMEA GGA sentence
+*                            delete altitude info for track
+*                            add time stamp option
+*                            separate readsol.c file
+*           2009/01/19  1.3  fix bug on display mark with by-q-flag option
+*           2010/05/10  1.4  support api readsolt() change
+*           2010/08/14  1.5  fix bug on readsolt()
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -174,7 +175,7 @@ extern int convkml(const char *infile, const char *outfile, gtime_t ts,
     else strcpy(file,outfile);
     
     /* read solution file */
-    if (readsolt((char **)&infile,1,ts,te,tint,qflg,&solbuf)) return -1;
+    if (!readsolt((char **)&infile,1,ts,te,tint,qflg,&solbuf)) return -1;
     
     /* mean position */
     for (i=0;i<3;i++) {
