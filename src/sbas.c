@@ -27,6 +27,7 @@
 *                               sbsreadmsgt(),sbsreadmsg()
 *                           deleted api:
 *                               sbspntpos(),sbsupdatestat()
+*           2010/08/16 1.7  not reject udre==14 or give==15 correction message
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -156,7 +157,7 @@ static int decode_sbstype2(const sbsmsg_t *msg, sbssat_t *sbssat)
     
     for (i=0;i<13;i++) {
         if ((j=13*((type==0?2:type)-2)+i)>=sbssat->nsat) break;
-        if ((udre=getbitu(msg->msg,174+4*i,4)+1)>=14) continue;
+        udre=getbitu(msg->msg,174+4*i,4);
         t0 =sbssat->sat[j].fcorr.t0;
         prc=sbssat->sat[j].fcorr.prc;
         sbssat->sat[j].fcorr.t0=gpst2time(msg->week,msg->tow);
@@ -188,7 +189,7 @@ static int decode_sbstype6(const sbsmsg_t *msg, sbssat_t *sbssat)
     }
     for (i=0;i<sbssat->nsat&&i<MAXSAT;i++) {
         if (sbssat->sat[i].fcorr.iodf!=iodf[i/13]) continue;
-        if ((udre=getbitu(msg->msg,22+i*4,4))>=14) continue;
+        udre=getbitu(msg->msg,22+i*4,4);
         sbssat->sat[i].fcorr.udre=udre+1;
     }
     trace(5,"decode_sbstype6: iodf=%d %d %d %d\n",iodf[0],iodf[1],iodf[2],iodf[3]);
@@ -359,7 +360,7 @@ static int decode_sbstype24(const sbsmsg_t *msg, sbssat_t *sbssat)
     
     for (i=0;i<6;i++) {
         if ((j=13*blk+i)>=sbssat->nsat) break;
-        if ((udre=getbitu(msg->msg,86+4*i,4))>=14) continue;
+        udre=getbitu(msg->msg,86+4*i,4);
         
         sbssat->sat[j].fcorr.t0  =gpst2time(msg->week,msg->tow);
         sbssat->sat[j].fcorr.prc =getbits(msg->msg,14+i*12,12)*0.125f;
@@ -388,7 +389,7 @@ static int decode_sbstype26(const sbsmsg_t *msg, sbsion_t *sbsion)
     
     for (i=0;i<15;i++) {
         if ((j=block*15+i)>=sbsion[band].nigp) continue;
-        if ((give=getbitu(msg->msg,22+i*13+9,4))>=15) continue;
+        give=getbitu(msg->msg,22+i*13+9,4);
         
         delay=getbitu(msg->msg,22+i*13,9);
         sbsion[band].igp[j].t0=gpst2time(msg->week,msg->tow);
@@ -396,8 +397,7 @@ static int decode_sbstype26(const sbsmsg_t *msg, sbsion_t *sbsion)
         sbsion[band].igp[j].give=give+1;
         
         if (sbsion[band].igp[j].give>=16) {
-            sbsion[band].igp[j].give =0;
-            sbsion[band].igp[j].delay=0.0;
+            sbsion[band].igp[j].give=0;
         }
     }
     trace(5,"decode_sbstype26: band=%d block=%d\n",band,block);
@@ -823,7 +823,9 @@ static int sbsfastcorr(gtime_t time, int sat, const sbssat_t *sbssat,
         if (p->sat!=sat) continue;
         if (p->fcorr.t0.time==0) break;
         t=timediff(time,p->fcorr.t0)+sbssat->tlat;
-        if (fabs(t)>MAXSBSAGEF) continue;
+        
+        /* expire age of correction or UDRE==14 (not monitored) */
+        if (fabs(t)>MAXSBSAGEF||p->fcorr.udre>=15) continue;
         *prc=p->fcorr.prc;
 #ifdef RRCENA
         if (p->fcorr.ai>0&&fabs(t)<=8.0*p->fcorr.dt) {

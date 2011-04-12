@@ -204,8 +204,9 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
         /* update sbas corrections */
         while (isbs<sbss.n) {
             time=gpst2time(sbss.msgs[isbs].week,sbss.msgs[isbs].tow);
-            sbsupdatecorr(sbss.msgs+isbs++,&navs);
-            if (timediff(time,obs[0].time)>-1.0) break;
+            sbsupdatecorr(sbss.msgs+isbs,&navs);
+            if (timediff(time,obs[0].time)>-1.0+DTTOL) break;
+            isbs++;
         }
     }
     else { /* input backward data */
@@ -226,8 +227,9 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
         /* update sbas corrections */
         while (isbs>=0) {
             time=gpst2time(sbss.msgs[isbs].week,sbss.msgs[isbs].tow);
-            sbsupdatecorr(sbss.msgs+isbs--,&navs);
-            if (timediff(time,obs[0].time)<1.0) break;
+            sbsupdatecorr(sbss.msgs+isbs,&navs);
+            if (timediff(time,obs[0].time)<1.0-DTTOL) break;
+            isbs--;
         }
     }
     return n;

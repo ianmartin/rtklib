@@ -25,6 +25,7 @@
 *                                setsolopt(),setsolformat()
 *           2010/08/14  1.7  fix bug on initialize solution buffer
 *                            suppress enu-solution if base pos not available
+*           2010/08/16  1.8  suppress null record if solution is not avalilable
 *-----------------------------------------------------------------------------*/
 #include <ctype.h>
 #include "rtklib.h"
@@ -1273,8 +1274,7 @@ extern int outsols(unsigned char *buff, const sol_t *sol, const double *rb,
         if (!screent(sol->time,ts,ts,opt->nmeaintv[0])) return 0;
     }
     if (sol->stat<=SOLQ_NONE||(opt->posf==SOLF_ENU&&norm(rb,3)<=0.0)) {
-        p+=sprintf((char *)p,"\n"); /* null */
-        return p-buff;
+        return 0;
     }
     timeu=opt->timeu<0?0:(opt->timeu>20?20:opt->timeu);
     

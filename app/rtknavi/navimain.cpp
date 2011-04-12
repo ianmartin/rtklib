@@ -608,7 +608,7 @@ void __fastcall TMainForm::SvrStart(void)
     char file[1024],*type;
     FILE *fp;
     gtime_t time=timeget();
-    pcvs_t pcvs={0};
+    pcvs_t pcvr={0},pcvs={0};
     pcv_t *pcv;
     
     Message->Caption="";
@@ -633,23 +633,38 @@ void __fastcall TMainForm::SvrStart(void)
             PrcOpt.exsats[sat-1]=1;
         }
     }
-    if ((RovAntPcvF||RefAntPcvF)&&!readpcv(AntPcvFileF.c_str(),&pcvs)) {
+    // read antenna files
+    if ((RovAntPcvF||RefAntPcvF)&&!readpcv(AntPcvFileF.c_str(),&pcvr)) {
         Message->Caption=s.sprintf("antenna file read error %s",RovAntF.c_str());
         return;
     }
     if (RovAntPcvF) {
         type=RovAntF.c_str();
-        if ((pcv=searchpcv(0,type,time,&pcvs))) {
+        if ((pcv=searchpcv(0,type,time,&pcvr))) {
             PrcOpt.pcvr[0]=*pcv;
         }
         else Message->Caption=s.sprintf("no antenna pcv %s",type);
     }
     if (RefAntPcvF) {
         type=RefAntF.c_str();
-        if ((pcv=searchpcv(0,type,time,&pcvs))) {
+        if ((pcv=searchpcv(0,type,time,&pcvr))) {
             PrcOpt.pcvr[1]=*pcv;
         }
         else Message->Caption=s.sprintf("no antenna pcv %s",type);
+    }
+    if (RovAntPcvF||RefAntPcvF) {
+        free(pcvr.pcv);
+    }
+    if (PrcOpt.sateph==EPHOPT_PREC||PrcOpt.sateph==EPHOPT_SSRCOM) {
+        if (!readpcv(SatPcvFileF.c_str(),&pcvs)) {
+            Message->Caption=s.sprintf("sat ant file read error %s",SatPcvFileF.c_str());
+            return;
+        }
+        for (i=0;i<MAXSAT;i++) {
+            if (!(pcv=searchpcv(i+1,"",time,&pcvs))) continue;
+            rtksvr.nav.pcvs[i]=*pcv;
+        }
+        free(pcvs.pcv);
     }
     if (BaselineC) {
         PrcOpt.baseline[0]=Baseline[0];
