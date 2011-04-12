@@ -20,6 +20,7 @@
 *           2009/12/04 1.2  support type 1010,1012,1020
 *           2010/07/15 1.3  support type 1057-1068 for ssr corrections
 *                           support type 1007,1008,1033 for antenna info
+*           2010/09/08 1.4  fix problem of ephemeris and ssr squence upset
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -1077,17 +1078,16 @@ static int decode_type1057(rtcm_t *rtcm)
             trace(2,"rtcm3 1057 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            rtcm->ssr[sat-1].iode=iode;
-            rtcm->ssr[sat-1].refd=refd;
-            
-            for (k=0;k<3;k++) {
-                rtcm->ssr[sat-1].deph [k]=deph [k];
-                rtcm->ssr[sat-1].ddeph[k]=ddeph[k];
-            }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        rtcm->ssr[sat-1].iode=iode;
+        rtcm->ssr[sat-1].refd=refd;
+        
+        for (k=0;k<3;k++) {
+            rtcm->ssr[sat-1].deph [k]=deph [k];
+            rtcm->ssr[sat-1].ddeph[k]=ddeph[k];
         }
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1111,14 +1111,13 @@ static int decode_type1058(rtcm_t *rtcm)
             trace(2,"rtcm3 1058 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            
-            for (k=0;k<3;k++) {
-                rtcm->ssr[sat-1].dclk[k]=dclk[k];
-            }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        
+        for (k=0;k<3;k++) {
+            rtcm->ssr[sat-1].dclk[k]=dclk[k];
         }
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1156,13 +1155,12 @@ static int decode_type1059(rtcm_t *rtcm)
             trace(2,"rtcm3 1059 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            for (k=0;k<MAXCODE;k++) {
-                rtcm->ssr[sat-1].cbias[k]=(float)cbias[k];
-            }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        for (k=0;k<MAXCODE;k++) {
+            rtcm->ssr[sat-1].cbias[k]=(float)cbias[k];
         }
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1194,18 +1192,17 @@ static int decode_type1060(rtcm_t *rtcm)
             trace(2,"rtcm3 1060 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            rtcm->ssr[sat-1].iode=iode;
-            rtcm->ssr[sat-1].refd=refd;
-            
-            for (k=0;k<3;k++) {
-                rtcm->ssr[sat-1].deph [k]=deph [k];
-                rtcm->ssr[sat-1].ddeph[k]=ddeph[k];
-                rtcm->ssr[sat-1].dclk [k]=dclk [k];
-            }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        rtcm->ssr[sat-1].iode=iode;
+        rtcm->ssr[sat-1].refd=refd;
+        
+        for (k=0;k<3;k++) {
+            rtcm->ssr[sat-1].deph [k]=deph [k];
+            rtcm->ssr[sat-1].ddeph[k]=ddeph[k];
+            rtcm->ssr[sat-1].dclk [k]=dclk [k];
         }
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1227,11 +1224,10 @@ static int decode_type1061(rtcm_t *rtcm)
             trace(2,"rtcm3 1061 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            rtcm->ssr[sat-1].ura=ura;
-        }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        rtcm->ssr[sat-1].ura=ura;
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1253,11 +1249,10 @@ static int decode_type1062(rtcm_t *rtcm)
             trace(2,"rtcm3 1062 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            rtcm->ssr[sat-1].hrclk=hrclk;
-        }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        rtcm->ssr[sat-1].hrclk=hrclk;
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1304,17 +1299,16 @@ static int decode_type1063(rtcm_t *rtcm)
             trace(2,"rtcm3 1063 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            rtcm->ssr[sat-1].iode=iode;
-            rtcm->ssr[sat-1].refd=refd;
-            
-            for (k=0;k<3;k++) {
-                rtcm->ssr[sat-1].deph [k]=deph [k];
-                rtcm->ssr[sat-1].ddeph[k]=ddeph[k];
-            }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        rtcm->ssr[sat-1].iode=iode;
+        rtcm->ssr[sat-1].refd=refd;
+        
+        for (k=0;k<3;k++) {
+            rtcm->ssr[sat-1].deph [k]=deph [k];
+            rtcm->ssr[sat-1].ddeph[k]=ddeph[k];
         }
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1338,14 +1332,13 @@ static int decode_type1064(rtcm_t *rtcm)
             trace(2,"rtcm3 1064 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            
-            for (k=0;k<3;k++) {
-                rtcm->ssr[sat-1].dclk[k]=dclk[k];
-            }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        
+        for (k=0;k<3;k++) {
+            rtcm->ssr[sat-1].dclk[k]=dclk[k];
         }
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1381,13 +1374,12 @@ static int decode_type1065(rtcm_t *rtcm)
             trace(2,"rtcm3 1065 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            for (k=0;k<MAXCODE;k++) {
-                rtcm->ssr[sat-1].cbias[k]=(float)cbias[k];
-            }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        for (k=0;k<MAXCODE;k++) {
+            rtcm->ssr[sat-1].cbias[k]=(float)cbias[k];
         }
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1419,18 +1411,17 @@ static int decode_type1066(rtcm_t *rtcm)
             trace(2,"rtcm3 1066 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            rtcm->ssr[sat-1].iode=iode;
-            rtcm->ssr[sat-1].refd=refd;
-            
-            for (k=0;k<3;k++) {
-                rtcm->ssr[sat-1].deph [k]=deph [k];
-                rtcm->ssr[sat-1].ddeph[k]=ddeph[k];
-                rtcm->ssr[sat-1].dclk [k]=dclk [k];
-            }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        rtcm->ssr[sat-1].iode=iode;
+        rtcm->ssr[sat-1].refd=refd;
+        
+        for (k=0;k<3;k++) {
+            rtcm->ssr[sat-1].deph [k]=deph [k];
+            rtcm->ssr[sat-1].ddeph[k]=ddeph[k];
+            rtcm->ssr[sat-1].dclk [k]=dclk [k];
         }
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1452,11 +1443,10 @@ static int decode_type1067(rtcm_t *rtcm)
             trace(2,"rtcm3 1067 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            rtcm->ssr[sat-1].ura=ura;
-        }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        rtcm->ssr[sat-1].ura=ura;
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1478,11 +1468,10 @@ static int decode_type1068(rtcm_t *rtcm)
             trace(2,"rtcm3 1068 satellite number error: prn=%d\n",prn);
             continue;
         }
-        if (rtcm->ssr) {
-            rtcm->ssr[sat-1].t0=rtcm->time;
-            rtcm->ssr[sat-1].udint=udint;
-            rtcm->ssr[sat-1].hrclk=hrclk;
-        }
+        rtcm->ssr[sat-1].t0=rtcm->time;
+        rtcm->ssr[sat-1].udint=udint;
+        rtcm->ssr[sat-1].hrclk=hrclk;
+        rtcm->ssr[sat-1].update=1;
     }
     return sync?0:10;
 }
@@ -1600,6 +1589,7 @@ extern int init_rtcm(rtcm_t *rtcm)
     obsd_t data0={{0}};
     eph_t  eph0 ={0,-1,-1};
     geph_t geph0={0,-1};
+    ssr_t ssr0={{0}};
     int i,j;
     
     trace(3,"init_rtcm:\n");
@@ -1615,7 +1605,9 @@ extern int init_rtcm(rtcm_t *rtcm)
     }
     rtcm->sta.hgt=0.0;
     rtcm->dgps=NULL;
-    rtcm->ssr=NULL;
+    for (i=0;i<MAXSAT;i++) {
+        rtcm->ssr[i]=ssr0;
+    }
     rtcm->msg[0]=rtcm->msgtype[0]=rtcm->opt[0]='\0';
     rtcm->obsflag=rtcm->ephsat=0;
     for (i=0;i<MAXSAT;i++) for (j=0;j<NFREQ;j++) {

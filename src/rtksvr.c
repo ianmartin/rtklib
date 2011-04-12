@@ -16,6 +16,7 @@
 *                            changed api:
 *                                rtksvrstart()
 *           2010/08/25  1.3  fix problem of ephemeris time inversion
+*           2010/09/08  1.4  fix problem of ephemeris and ssr squence upset
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -92,7 +93,7 @@ static void updatesvr(rtksvr_t *svr, int ret, obs_t *obs, nav_t *nav, int sat,
     eph_t *eph1,*eph2,*eph3;
     geph_t *geph1,*geph2,*geph3;
     double pos[3],del[3]={0},dr[3];
-    int i,n=0,prn;
+    int i,n=0,prn,sys,iode;
     
     tracet(4,"updatesvr: ret=%d sat=%2d index=%d\n",ret,sat,index);
     
@@ -187,6 +188,23 @@ static void updatesvr(rtksvr_t *svr, int ret, obs_t *obs, nav_t *nav, int sat,
         svr->nmsg[index][5]++;
     }
     else if (ret==10) { /* ssr message */
+        for (i=0;i<MAXSAT;i++) {
+            if (!svr->rtcm[index].ssr[i].update) continue;
+            svr->rtcm[index].ssr[i].update=0;
+            iode=svr->rtcm[index].ssr[i].iode;
+            sys=satsys(i+1,&prn);
+            
+            /* check corresponding ephemeris exists */
+            if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS) {
+                if (svr->nav.eph[i       ].iode!=iode&&
+                    svr->nav.eph[i+MAXSAT].iode!=iode) continue;
+            }
+            else if (sys==SYS_GLO) {
+                if (svr->nav.geph[prn-1          ].iode!=iode&&
+                    svr->nav.geph[prn-1+MAXPRNGLO].iode!=iode) continue;
+            }
+            svr->nav.ssr[i]=svr->rtcm[index].ssr[i];
+        }
         svr->nmsg[index][7]++;
     }
     else if (ret==-1) { /* error */
@@ -580,9 +598,8 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
         init_raw (svr->raw +i);
         init_rtcm(svr->rtcm+i);
         
-        /* connect dgps/ssr corrections */
+        /* connect dgps corrections */
         svr->rtcm[i].dgps=svr->nav.dgps;
-        svr->rtcm[i].ssr =svr->nav.ssr;
     }
     for (i=0;i<2;i++) { /* output peek buffer */
         if (!(svr->sbuf[i]=(unsigned char *)malloc(buffsize))) {

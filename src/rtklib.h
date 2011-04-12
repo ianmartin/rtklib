@@ -535,6 +535,7 @@ typedef struct {        /* ssr correction type */
     double dclk [3];    /* delta clock {c0,c1,c2} (m,m/s,m/s^2) */
     double hrclk;       /* high-rate clock corection (m) */
     float cbias[MAXCODE]; /* code biases (m) */
+    unsigned char update; /* update flag (0:no update,1:update) */
 } ssr_t;
 
 typedef struct {        /* navigation data type */
@@ -633,7 +634,7 @@ typedef struct {        /* rtcm control struct type */
     nav_t nav;          /* satellite ephemerides */
     sta_t sta;          /* station parameters */
     dgps_t *dgps;       /* output of dgps corrections */
-    ssr_t *ssr;         /* output of ssr corrections */
+    ssr_t ssr[MAXSAT];  /* output of ssr corrections */
     char msg[128];      /* special message */
     char msgtype[128];  /* last message type */
     int obsflag;        /* obs data complete flag (1:ok,0:not complete) */
