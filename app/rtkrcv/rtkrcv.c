@@ -9,6 +9,7 @@
 * version : $Revision:$ $Date:$
 * history : 2009/12/13 1.0 new
 *           2010/07/18 1.1 add option -m
+*           2010/08/12 1.2 fix bug on ftp/http
 *-----------------------------------------------------------------------------*/
 #ifndef WIN32
 #define _POSIX_C_SOURCE 2
@@ -164,8 +165,8 @@ static const char *pathopts[]={         /* path options help */
     " tcpcli   : addr:port",
     " ntripsvr : user:passwd@addr:port/mntpnt[:str]",
     " ntripcli : user:passwd@addr:port/mntpnt",
-    " ftp      : user:passwd@addr/path[::I=tint,off,rint]",
-    " http     : addr/path[::I=tint,off,rint]",
+    " ftp      : user:passwd@addr/path[::T=poff,tint,off,rint]",
+    " http     : addr/path[::T=poff,tint,off,rint]",
     ""
 };
 /* receiver options table ----------------------------------------------------*/
@@ -735,6 +736,11 @@ static int startsvr(vt_t *vt)
     stropt[3]=buffsize;
     strsetopt(stropt);
     
+    if (strfmt[2]==8) strfmt[2]=STRFMT_SP3;
+    
+    /* set temporaly directory for ftp/http */
+    strsetdir(filopt.tempdir);
+    
     /* execute start command */
     if (*startcmd&&(ret=system(startcmd))) {
         trace(2,"command exec error: %s (%d)\n",startcmd,ret);
@@ -1161,7 +1167,8 @@ static void prstream(vt_t *vt)
     const char *type[]={
         "-","serial","file","tcpsvr","tcpcli","udp","ntrips","ntripc","ftp","http"
     };
-    const char *fmt[]={"rtcm2","rtcm3","oem4","oem3","ubx","ss2","cres","sp3"};
+    const char *fmt[]={"rtcm2","rtcm3","oem4","oem3","ubx","ss2","hemis","skytreq",
+                       "","","","","","","sp3","","",""};
     const char *sol[]={"llh","xyz","enu","nmea"};
     stream_t stream[9];
     int i,format[9]={0};

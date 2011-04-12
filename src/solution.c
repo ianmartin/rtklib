@@ -23,6 +23,8 @@
 *                                outnmea_gsv()
 *                            deleted api:
 *                                setsolopt(),setsolformat()
+*           2010/08/14  1.7  fix bug on initialize solution buffer
+*                            suppress enu-solution if base pos not available
 *-----------------------------------------------------------------------------*/
 #include <ctype.h>
 #include "rtklib.h"
@@ -747,12 +749,14 @@ extern void initsolbuf(solbuf_t *solbuf, int cyclic, int nmax)
     solbuf->cyclic=cyclic;
     solbuf->time=time0;
     solbuf->data=NULL;
-    if (nmax<=2) nmax=2;
-    if (!(solbuf->data=malloc(sizeof(sol_t)*nmax))) {
-        trace(1,"initsolbuf: memory allocation error\n");
-        return;
+    if (cyclic) {
+        if (nmax<=2) nmax=2;
+        if (!(solbuf->data=malloc(sizeof(sol_t)*nmax))) {
+            trace(1,"initsolbuf: memory allocation error\n");
+            return;
+        }
+        solbuf->nmax=nmax;
     }
-    solbuf->nmax=nmax;
 }
 /* free solution buffer --------------------------------------------------------
 * free memory for solution buffer
@@ -1268,7 +1272,7 @@ extern int outsols(unsigned char *buff, const sol_t *sol, const double *rb,
         if (opt->nmeaintv[0]<0.0) return 0;
         if (!screent(sol->time,ts,ts,opt->nmeaintv[0])) return 0;
     }
-    if (sol->stat<=SOLQ_NONE) {
+    if (sol->stat<=SOLQ_NONE||(opt->posf==SOLF_ENU&&norm(rb,3)<=0.0)) {
         p+=sprintf((char *)p,"\n"); /* null */
         return p-buff;
     }
