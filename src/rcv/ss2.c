@@ -10,6 +10,7 @@
 * history : 2008/05/18 1.0 new
 *           2008/06/16 1.2 separate common functions to rcvcmn.c
 *           2009/04/01 1.3 fix bug on decode #21 message
+*           2010/08/20 1.4 fix problem with minus value of time slew in #23
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -102,7 +103,9 @@ static int decode_ss2meas(raw_t *raw)
         trace(2,"ss2 id#23 message time adjustment error\n");
         return -1;
     }
-    slew=U1(p)*tslew;
+    /* time slew defined as uchar (ref [1]) but minus value appears in some f/w */
+    slew=*(char *)(p)*tslew;
+    
     raw->icpc+=4.5803-freqif*slew-FREQ1*(slew-1E-6); /* phase correction */
     
     for (i=n=0,p+=11;i<nobs&&n<MAXOBS;i++,p+=11) {
