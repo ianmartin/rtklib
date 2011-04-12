@@ -24,6 +24,8 @@
 *                           add keywords replacement of %ha,%hb,%hc in path
 *                           added api:
 *                               strsetdir(),strsettimeout()
+*           2010/08/31 1.5  reconnect after error of ntrip client
+*                           fix bug on no file swap at week start
 *-----------------------------------------------------------------------------*/
 #include <ctype.h>
 #include "rtklib.h"
@@ -626,7 +628,7 @@ static int writefile(file_t *file, unsigned char *buff, int n, char *msg)
         intv=file->swapintv*3600.0;
         tow1=time2gpst(file->wtime,&week1);
         tow2=time2gpst(wtime,&week2);
-        tow2+=86400.0*(week2-week1);
+        tow2+=604800.0*(week2-week1);
         if (floor(tow1/intv)<floor(tow2/intv)) {
             swapfile(file,msg);
         }
@@ -781,6 +783,9 @@ static int recv_nb(socket_t sock, unsigned char *buff, int n)
 static int gentcp(tcp_t *tcp, int type, char *msg)
 {
     struct hostent *hp;
+#if 0
+    int opt=1;
+#endif
     
     tracet(3,"gentcp: type=%d\n",type);
     
@@ -800,6 +805,10 @@ static int gentcp(tcp_t *tcp, int type, char *msg)
     tcp->addr.sin_port=htons(tcp->port);
     
     if (type==0) { /* server socket */
+#if 0
+        setsockopt(tcp->sock,SOL_SOCKET,SO_REUSEADDR,(const char *)&opt,
+                   sizeof(opt));
+#endif
         if (bind(tcp->sock,(struct sockaddr *)&tcp->addr,sizeof(tcp->addr))==-1) {
             sprintf(msg,"bind error (%d) : %d",errsock(),tcp->port);
             tracet(1,"gentcp: bind error port=%d err=%d\n",tcp->port,errsock());
@@ -1098,7 +1107,7 @@ static int readtcpcli(tcpcli_t *tcpcli, unsigned char *buff, int n, char *msg)
         err=errsock();
         tracet(1,"readtcpcli: recv error sock=%d err=%d\n",tcpcli->svr.sock,err);
         sprintf(msg,"recv error (%d)",err);
-        discontcp(&tcpcli->svr,ticonnect);
+        discontcp(&tcpcli->svr,tcpcli->tirecon);
         return 0;
     }
     if (nr>0) tcpcli->svr.tact=tickget();
@@ -1118,7 +1127,7 @@ static int writetcpcli(tcpcli_t *tcpcli, unsigned char *buff, int n, char *msg)
         err=errsock();
         tracet(1,"writetcp: send error sock=%d err=%d\n",tcpcli->svr.sock,err);
         sprintf(msg,"send error (%d)",err);
-        discontcp(&tcpcli->svr,ticonnect);
+        discontcp(&tcpcli->svr,tcpcli->tirecon);
         return 0;
     }
     if (ns>0) tcpcli->svr.tact=tickget();
@@ -1221,14 +1230,18 @@ static int rspntrip_s(ntrip_t *ntrip, char *msg)
     else if ((p=strstr((char *)ntrip->buff,NTRIP_RSP_ERROR))) { /* error */
         strncpy(msg,(char *)ntrip->buff,ntrip->nb); msg[ntrip->nb]=0;
         tracet(1,"rspntrip_s: %s nb=%d\n",msg,ntrip->nb);
-        ntrip->state=-1;
-        discontcp(&ntrip->tcp->svr,-1);
+        ntrip->nb=0;
+        ntrip->buff[0]='\0';
+        ntrip->state=0;
+        discontcp(&ntrip->tcp->svr,ntrip->tcp->tirecon);
     }
     else if (ntrip->nb>=NTRIP_MAXRSP) { /* buffer overflow */
         sprintf(msg,"response overflow");
         tracet(1,"rspntrip_s: response overflow nb=%d\n",ntrip->nb);
-        ntrip->state=-1;
-        discontcp(&ntrip->tcp->svr,-1);
+        ntrip->nb=0;
+        ntrip->buff[0]='\0';
+        ntrip->state=0;
+        discontcp(&ntrip->tcp->svr,ntrip->tcp->tirecon);
     }
     tracet(5,"rspntrip_s: exit state=%d nb=%d\n",ntrip->state,ntrip->nb);
     return 0;
@@ -1262,21 +1275,27 @@ static int rspntrip_c(ntrip_t *ntrip, char *msg)
         }
         sprintf(msg,"no mountp. reconnect...");
         tracet(2,"rspntrip_c: no mount point nb=%d\n",ntrip->nb);
+        ntrip->nb=0;
+        ntrip->buff[0]='\0';
         ntrip->state=0;
-        discontcp(&ntrip->tcp->svr,ticonnect); /* re-connect after interval */
+        discontcp(&ntrip->tcp->svr,ntrip->tcp->tirecon);
     }
     else if ((p=strstr((char *)ntrip->buff,NTRIP_RSP_HTTP))) { /* http response */
         if ((q=strchr(p,'\r'))) *q='\0'; else ntrip->buff[128]='\0';
         strcpy(msg,p);
         tracet(1,"rspntrip_s: %s nb=%d\n",msg,ntrip->nb);
-        ntrip->state=-1;
-        discontcp(&ntrip->tcp->svr,-1);
+        ntrip->nb=0;
+        ntrip->buff[0]='\0';
+        ntrip->state=0;
+        discontcp(&ntrip->tcp->svr,ntrip->tcp->tirecon);
     }
     else if (ntrip->nb>=NTRIP_MAXRSP) { /* buffer overflow */
         sprintf(msg,"response overflow");
         tracet(1,"rspntrip_s: response overflow nb=%d\n",ntrip->nb);
-        ntrip->state=-1;
-        discontcp(&ntrip->tcp->svr,-1);
+        ntrip->nb=0;
+        ntrip->buff[0]='\0';
+        ntrip->state=0;
+        discontcp(&ntrip->tcp->svr,ntrip->tcp->tirecon);
     }
     tracet(5,"rspntrip_c: exit state=%d nb=%d\n",ntrip->state,ntrip->nb);
     return 0;
@@ -1865,13 +1884,14 @@ extern int strstat(stream_t *stream, char *msg)
     
     tracet(4,"strstat:\n");
     
+    strlock(stream);
     if (msg) {
-        strlock(stream);
         strncpy(msg,stream->msg,MAXSTRMSG-1); msg[MAXSTRMSG-1]='\0';
-        strunlock(stream);
     }
-    if (!stream->port) return stream->state;
-    
+    if (!stream->port) {
+        strunlock(stream);
+        return stream->state;
+    }
     switch (stream->type) {
         case STR_SERIAL  : state=stateserial((serial_t *)stream->port); break;
         case STR_FILE    : state=statefile  ((file_t   *)stream->port); break;
@@ -1881,9 +1901,12 @@ extern int strstat(stream_t *stream, char *msg)
         case STR_NTRIPCLI: state=statentrip ((ntrip_t  *)stream->port); break;
         case STR_FTP     : state=stateftp   ((ftp_t    *)stream->port); break;
         case STR_HTTP    : state=stateftp   ((ftp_t    *)stream->port); break;
-        default: return 0;
+        default:
+            strunlock(stream);
+            return 0;
     }
     if (state==2&&(int)(tickget()-stream->tact)<=TINTACT) state=3;
+    strunlock(stream);
     return state;
 }
 /* get stream statistics summary -----------------------------------------------

@@ -15,6 +15,7 @@
 *                                rtksvropenstr(),rtksvrclosestr()
 *                            changed api:
 *                                rtksvrstart()
+*           2010/08/25  1.3  fix problem of ephemeris time inversion
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -112,9 +113,10 @@ static void updatesvr(rtksvr_t *svr, int ret, obs_t *obs, nav_t *nav, int sat,
         if (satsys(sat,&prn)!=SYS_GLO) {
             if (!svr->navsel||svr->navsel==index+1) {
                 eph1=nav->eph+sat-1;
-                    eph2=svr->nav.eph+sat-1;
+                eph2=svr->nav.eph+sat-1;
                 eph3=svr->nav.eph+sat-1+MAXSAT;
-                if (eph1->iode!=eph2->iode) {
+                if (eph2->ttr.time==0||
+                    (timediff(eph1->toe,eph2->toe)>0.0&&eph1->iode!=eph2->iode)) {
                     *eph3=*eph2;
                     *eph2=*eph1;
                     updatenav(&svr->nav);
@@ -127,7 +129,8 @@ static void updatesvr(rtksvr_t *svr, int ret, obs_t *obs, nav_t *nav, int sat,
                geph1=nav->geph+prn-1;
                geph2=svr->nav.geph+prn-1;
                geph3=svr->nav.geph+prn-1+MAXPRNGLO;
-               if (geph1->iode!=geph2->iode) {
+               if (geph2->tof.time==0||
+                   (timediff(geph1->toe,geph2->toe)>0.0&&geph1->iode!=geph2->iode)) {
                    *geph3=*geph2;
                    *geph2=*geph1;
                    updatenav(&svr->nav);
@@ -540,6 +543,7 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
                        const double *nmeapos, prcopt_t *prcopt,
                        solopt_t *solopt, stream_t *moni)
 {
+    gtime_t time0={0};
     int i,j,rw;
     
     tracet(3,"rtksvrstart: cycle=%d buffsize=%d navsel=%d sbssat=%d nmeacycle=%d nmeareq=%d\n",
@@ -595,6 +599,9 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
         svr->rtk.rb[i]=i<3?prcopt->rb[i]:0.0;
     }
     /* update navigation data */
+    for (i=0;i<MAXSAT   *2;i++) svr->nav.eph [i].ttr=time0;
+    for (i=0;i<MAXPRNGLO*2;i++) svr->nav.geph[i].tof=time0;
+    for (i=0;i<MAXSBSSAT*2;i++) svr->nav.seph[i].tof=time0;
     updatenav(&svr->nav);
     
     /* set monitor stream */
