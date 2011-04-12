@@ -6,6 +6,8 @@
 // version : $Revision:$ $Date:$
 // history : 2008/07/14  1.0 new
 //           2010/07/18  1.1 rtklib 2.4.0
+//           2010/08/16  1.2 fix bug on setting of satellite antenna model
+//           2010/09/04  1.3 fix bug on setting of receiver antenna delta
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #include <vcl\inifiles.hpp>
@@ -633,9 +635,8 @@ void __fastcall TMainForm::SvrStart(void)
             PrcOpt.exsats[sat-1]=1;
         }
     }
-    // read antenna files
     if ((RovAntPcvF||RefAntPcvF)&&!readpcv(AntPcvFileF.c_str(),&pcvr)) {
-        Message->Caption=s.sprintf("antenna file read error %s",RovAntF.c_str());
+        Message->Caption=s.sprintf("rcv ant file read error %s",AntPcvFileF.c_str());
         return;
     }
     if (RovAntPcvF) {
@@ -644,6 +645,8 @@ void __fastcall TMainForm::SvrStart(void)
             PrcOpt.pcvr[0]=*pcv;
         }
         else Message->Caption=s.sprintf("no antenna pcv %s",type);
+        
+        for (i=0;i<3;i++) PrcOpt.antdel[0][i]=RovAntDel[i];
     }
     if (RefAntPcvF) {
         type=RefAntF.c_str();
@@ -651,6 +654,8 @@ void __fastcall TMainForm::SvrStart(void)
             PrcOpt.pcvr[1]=*pcv;
         }
         else Message->Caption=s.sprintf("no antenna pcv %s",type);
+        
+        for (i=0;i<3;i++) PrcOpt.antdel[1][i]=RefAntDel[i];
     }
     if (RovAntPcvF||RefAntPcvF) {
         free(pcvr.pcv);
