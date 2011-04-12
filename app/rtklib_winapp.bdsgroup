@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<PersonalityInfo>
+		<Option>
+			<Option Name="Personality">Default.Personality</Option>
+			<Option Name="ProjectType"></Option>
+			<Option Name="Version">1.0</Option>
+			<Option Name="GUID">{79A4EAD4-48E3-44D0-981C-FB5832779DAC}</Option>
+		</Option>
+	</PersonalityInfo>
+	<Default.Personality>  <Projects>
+      <Projects Name="rtkconv.exe">rtkconv\rtkconv.bdsproj</Projects>
+      <Projects Name="rtknavi.exe">rtknavi\rtknavi.bdsproj</Projects>
+      <Projects Name="rtkplot.exe">rtkplot\rtkplot.bdsproj</Projects>
+      <Projects Name="rtkpost.exe">rtkpost\rtkpost.bdsproj</Projects>
+      <Projects Name="srctblbrows.exe">srctblbrows\srctblbrows.bdsproj</Projects>
+      <Projects Name="strsvr.exe">strsvr\strsvr.bdsproj</Projects>
+      <Projects Name="rtkpost_mkl.exe">rtkpost_mkl\rtkpost_mkl.bdsproj</Projects>
+      <Projects Name="Targets">rtkconv.exe rtknavi.exe rtkplot.exe rtkpost.exe srctblbrows.exe strsvr.exe rtkpost_mkl.exe</Projects>
+    </Projects>
+    <Dependencies/>
+  </Default.Personality>
+</BorlandProject>

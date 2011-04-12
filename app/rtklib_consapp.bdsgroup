@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<PersonalityInfo>
+		<Option>
+			<Option Name="Personality">Default.Personality</Option>
+			<Option Name="ProjectType"></Option>
+			<Option Name="Version">1.0</Option>
+			<Option Name="GUID">{7EFFC6B5-6704-45F6-934C-DDD6C2FC0BDC}</Option>
+		</Option>
+	</PersonalityInfo>
+	<Default.Personality>  <Projects>
+      <Projects Name="_rnx2rtkp.exe">rnx2rtkp\bcc\_rnx2rtkp.bdsproj</Projects>
+      <Projects Name="_convbin.exe">convbin\bcc\_convbin.bdsproj</Projects>
+      <Projects Name="_pos2kml.exe">pos2kml\bcc\_pos2kml.bdsproj</Projects>
+      <Projects Name="Targets">_rnx2rtkp.exe _convbin.exe _pos2kml.exe</Projects>
+    </Projects>
+    <Dependencies/>
+  </Default.Personality>
+</BorlandProject>
