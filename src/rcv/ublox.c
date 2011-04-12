@@ -14,6 +14,7 @@
 *           2009/04/10 1.3 refactored
 *           2009/09/25 1.4 add function gen_ubx()
 *           2010/01/17 1.5 add time tag adjustment option -tadj sec
+*           2010/10/31 1.6 fix bug on playback disabled for raw data
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -96,7 +97,7 @@ static int decode_rxmraw(raw_t *raw)
         toff=(tn-floor(tn+0.5))*tadj;
         time=timeadd(time,-toff);
     }
-    if ((tt=timediff(time,raw->time))<=0.0) {
+    if (fabs(tt=timediff(time,raw->time))<=1e-3) {
         time2str(time,tstr,3);
         trace(2,"ubx rxmraw time tag duplicated: time=%s\n",tstr);
         return 0;
