@@ -77,8 +77,6 @@ __published:
 	TMenuItem *MenuStop;
 	
 	TSpeedButton *BtnTimeSys;
-	TSpeedButton *BtnSolType;
-	TSpeedButton *BtnPlotType;
 	TSpeedButton *BtnMonitor;
 	TSpeedButton *BtnAbout;
 	TSpeedButton *BtnInputStr;
@@ -86,7 +84,6 @@ __published:
 	TSpeedButton *BtnLogStr;
 	
 	TSpeedButton *BtnTaskTray;
-	TSpeedButton *SpeedButton1;
 	
 	TScrollBar *ScbSol;
 	
@@ -97,10 +94,15 @@ __published:
 	TImageList *ImageList;
 	TImage *Image1;
 	TImage *Image2;
-	TImage *Disp;
-	TImage *Plot;
 	
 	TTimer *Timer;
+	TPanel *IndQ;
+	TSpeedButton *BtnPlotType;
+	TSpeedButton *BtnFreqType;
+	TSpeedButton *BtnSolType;
+	TSpeedButton *BtnSolType2;
+	TImage *Plot;
+	TImage *Disp;
 	
 	void __fastcall FormCreate        (TObject *Sender);
 	void __fastcall FormShow          (TObject *Sender);
@@ -138,31 +140,11 @@ __published:
 	void __fastcall TrayIconDblClick  (TObject *Sender);
 	void __fastcall TrayIconMouseDown (TObject *Sender, TMouseButton Button,
 							           TShiftState Shift, int X, int Y);
+	void __fastcall BtnFreqTypeClick(TObject *Sender);
+	void __fastcall Panel22Resize(TObject *Sender);
 private:
-	int SvrCycle,SvrBuffSize,Scale,SolBuffSize,NavSelect,SbasSat,SavedSol;
-	int NmeaReq,NmeaCycle,InTimeTag,OutTimeTag,OutAppend,LogTimeTag,LogAppend;
-	int TimeoutTime,ReconTime,SbasCorr,DgpsCorr,TideCorr;
-	int Stream[MAXSTRRTK],StreamC[MAXSTRRTK],Format[MAXSTRRTK];
-	int CmdEna[2][2],TimeSys,SolType,PlotType,MoniPort,OpenPort;
-	
-	int PSol,PSolS,PSolE,Nsat[2],SolCurrentStat;
-	int Sat[2][MAXSAT],Snr1[2][MAXSAT],Snr2[2][MAXSAT],Vsat[2][MAXSAT];
-	double Az[2][MAXSAT],El[2][MAXSAT];
-	gtime_t *Time;
-	int *SolStat,*Nvsat;
-	double *SolRov,*SolRef,*Qr,*VelRov,*Age,*Ratio;
-	AnsiString Paths[MAXSTRRTK][4],Cmds[3][2],InTimeStart,InTimeSpeed,ExSats;
-	AnsiString OutSwapInterval,LogSwapInterval;
-	prcopt_t PrcOpt;
-	solopt_t SolOpt;
-	TFont *PosFont;
-	int DebugTraceF,DebugStatusF,OutputGeoidF,BaselineC;
-	int RovPosTypeF,RefPosTypeF,RovAntPcvF,RefAntPcvF;
-	AnsiString RovAntF,RefAntF,SatPcvFileF,AntPcvFileF;
-	double RovAntDel[3],RefAntDel[3],RovPos[3],RefPos[3],NmeaPos[2];
-	double Baseline[2];
-	AnsiString History[10],MntpHist[10];
-	
+	int PlotWidth,PlotHeight;
+
 	void __fastcall UpdateLog    (int stat, gtime_t time, double *rr, float *qr,
 								  double *rb, int ns, double age, double ratio);
 	void __fastcall SvrStart     (void);
@@ -195,6 +177,33 @@ private:
 	void __fastcall SetTrayIcon  (int index);
 	int  __fastcall ExecCmd      (AnsiString cmd, int show);
 public:
+	AnsiString IniFile;
+	
+	int SvrCycle,SvrBuffSize,Scale,SolBuffSize,NavSelect,SavedSol;
+	int NmeaReq,NmeaCycle,InTimeTag,OutTimeTag,OutAppend,LogTimeTag,LogAppend;
+	int TimeoutTime,ReconTime,SbasCorr,DgpsCorr,TideCorr,FileSwapMargin;
+	int Stream[MAXSTRRTK],StreamC[MAXSTRRTK],Format[MAXSTRRTK];
+	int CmdEna[2][2],TimeSys,SolType,PlotType,FreqType,MoniPort,OpenPort;
+	
+	int PSol,PSolS,PSolE,Nsat[2],SolCurrentStat;
+	int Sat[2][MAXSAT],Snr[2][MAXSAT][NFREQ],Vsat[2][MAXSAT];
+	double Az[2][MAXSAT],El[2][MAXSAT];
+	gtime_t *Time;
+	int *SolStat,*Nvsat;
+	double *SolRov,*SolRef,*Qr,*VelRov,*Age,*Ratio;
+	AnsiString Paths[MAXSTRRTK][4],Cmds[3][2],InTimeStart,InTimeSpeed,ExSats;
+	AnsiString RcvOpt[3],ProxyAddr;
+	AnsiString OutSwapInterval,LogSwapInterval;
+	prcopt_t PrcOpt;
+	solopt_t SolOpt;
+	TFont *PosFont;
+	int DebugTraceF,DebugStatusF,OutputGeoidF,BaselineC;
+	int RovPosTypeF,RefPosTypeF,RovAntPcvF,RefAntPcvF;
+	AnsiString RovAntF,RefAntF,SatPcvFileF,AntPcvFileF;
+	double RovAntDel[3],RefAntDel[3],RovPos[3],RefPos[3],NmeaPos[2];
+	double Baseline[2];
+	AnsiString History[10],MntpHist[10];
+	
 	AnsiString GeoidDataFileF,StaPosFileF,DCBFileF,LocalDirectory;
 	AnsiString PntName[MAXMAPPNT];
 	double PntPos[MAXMAPPNT][3];

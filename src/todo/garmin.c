@@ -59,7 +59,7 @@ static int decoderawobs(const unsigned char *buff, int len, gtime_t ts,
         obs[n].L[0]=U4(q)+(double)U2(q+12)/2048.0+FREQ1*off;
         obs[n].P[0]=R8(q+4)+CLIGHT*off;
         obs[n].D[0]=0.0;
-        obs[n].SNR[0]=U1(q+16)+30;
+        obs[n].SNR[0]=(unsigned char)((U1(q+16)+30)*4.0+0.5);
         obs[n++].LLI[0]=U1(q+14)?1:0;
     }
     return n;

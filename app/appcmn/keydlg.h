@@ -10,7 +10,7 @@
 //---------------------------------------------------------------------------
 class TKeyDialog : public TForm
 {
-__published:	// IDE 管理のコンポーネント
+__published:
 	TLabel *Label1;
 	TLabel *Label2;
 	TLabel *Label3;
@@ -40,9 +40,15 @@ __published:	// IDE 管理のコンポーネント
 	TLabel *Label26;
 	TLabel *Label27;
 	TLabel *Label28;
+	TLabel *Label29;
+	TLabel *Label30;
+	TLabel *Label31;
+	TLabel *Label32;
 	void __fastcall BtnOkClick(TObject *Sender);
-private:	// ユーザー宣言
-public:		// ユーザー宣言
+	void __fastcall FormShow(TObject *Sender);
+private:
+public:
+	int Flag;
 	__fastcall TKeyDialog(TComponent* Owner);
 };
 //---------------------------------------------------------------------------

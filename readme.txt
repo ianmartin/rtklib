@@ -12,26 +12,25 @@ programs (APs) utilizing the library. The features of RTKLIB are:
 
 (1) Supports standard and precise positioning algorithms with:
 
-    GPS, GLONASS and SBAS (Galileo and QZSS are supported but disabled in
-    current versions)
+    GPS, GLONASS, Galileo, QZSS and SBAS (Galileo is not yet formally supported)
 
 (2) Supports various positioning modes with GNSS for both real-time and
     post-processing:
 
     Single-point, DGPS/DGNSS, Kinematic, Static, Moving-baseline, Fixed,
-    PPP-Kinematic and PPP-Static
+    PPP-Kinematic, PPP-Static and PPP-Fixed
 
 (3) Supports many standard formats and protocols for GNSS:
 
     RINEX 2.10,2.11,2.12 OBS/NAV/GNAV/HNAV, RINEX 3.00 OBS/NAV/CLK, RTCM v.2.3, 
-    RTCM v.3.1, NTRIP 1.0, NMEA 0183,SP3-c, ANTEX 1.3, NGS PCV and EMS 2.0 
-    (see Release Notes for supported RTCM messages)
+    RTCM v.3.1, NTRIP 1.0, NMEA 0183,SP3-c, IONEX 1.0, ANTEX 1.3, NGS PCV and
+    EMS 2.0 (see Release Notes for supported RTCM messages)
 
 (4) Supports several GNSS receivers' proprietary messages:
 
     NovAtel: OEM4/V, OEM3, OEMStar, Superstar II, Hemisphere: Eclipse, 
-    Crescent, u-blox: LEA-4T, LEA-5T and SkyTraq: S1315F (see Release Notes
-    for supported messages)
+    Crescent, u-blox: LEA-4T, 5T, 6T and SkyTraq: S1315F, JAVAD and Furuno
+    GW-10-II/III (see Release Notes for supported messages)
 
 (6) Supports external communication via: 
 
@@ -53,12 +52,12 @@ programs (APs) utilizing the library. The features of RTKLIB are:
 
 (8) Provides GUI and console (command line) APs:
 
-    - RTKNAVI, RTKRCV: real-time positioning
-    - RTKPOST, RNX2RTKP: post-processing analysis
-    - RTKPLOT: visualization of solutions and observation data
-    - RTKCONV, CONVBIN: RINEX translator for RTCM and receiver raw data log
-    - STRSVR, STR2STR: communication utility
-    - NTRIPSRCBROWS: NTRIP source table browser
+    - RTKNAVI, RTKRCV   : real-time positioning
+    - RTKPOST, RNX2RTKP : post-processing analysis
+    - RTKPLOT           : visualization of solutions and observation data
+    - RTKCONV, CONVBIN  : RINEX translator for RTCM and receiver raw data log
+    - STRSVR,  STR2STR  : communication utility
+    - NTRIPSRCBROWS     : NTRIP source table browser
     - Other positioning utilities
 
 All of the executable binary APs for Windows are included in the package as well
@@ -107,6 +106,7 @@ PACKAGE
     ./rtkplot     plot solutions or observation data (gui)
     ./rtkconv     receiver log converter (gui)
     ./rtknavi     realtime rtk positioning (gui)
+    ./rtknavi_mkl realtime rtk positioning (gui)
     ./strsvr      stream server (gui)
     ./srctblbrows ntrip source table browser
     ./appcmn      common application routines
@@ -114,7 +114,7 @@ PACKAGE
   ./util          utilities
   ./test          test programs and data
   ./doc           documents
-  ./mkl           intel mkl library include and lib for borland environment
+  ./lib           library genration environment
 
 --------------------------------------------------------------------------------
 
@@ -130,9 +130,10 @@ HISTORY
   ver.2.2.2  2009/09/07 see relnotes_2.2.2.txt
   ver.2.3.0  2009/12/17 see relnotes_2.3.0.txt
   ver.2.4.0  2010/08/08 see relnotes_2.4.0.pdf
+  ver.2.4.1  2011/06/01 see relnotes_2.4.1.htm
 
 --------------------------------------------------------------------------------
 
-           Copyright (C) 2007-2010 by T.TAKASU, All rights reserved.
+           Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
 
 

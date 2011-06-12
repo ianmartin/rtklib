@@ -24,6 +24,8 @@
 *                               readsp3()
 *                           deleted api:
 *                               eph2posp()
+*           2010/09/09 1.5  fix problem when precise clock outage
+*           2011/01/23 1.6  support qzss satellite code
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -229,6 +231,7 @@ static void nut_iau1980(double t, const double *f, double *dpsi, double *deps)
 *                               (NULL: no output)
 * return : none
 * note   : see ref [3] chap 5
+*          not thread-safe
 *-----------------------------------------------------------------------------*/
 extern void eci2ecef(gtime_t tutc, const erp_t *erp, double *U, double *gmst)
 {
@@ -415,13 +418,16 @@ static int readsp3h(FILE *fp, gtime_t *time, char *type, int *sats,
 /* add precise ephemeris -----------------------------------------------------*/
 static int addpeph(nav_t *nav, peph_t *peph)
 {
+    peph_t *nav_peph;
+    
     if (nav->ne>=nav->nemax) {
         nav->nemax+=256;
-        if (!(nav->peph=(peph_t *)realloc(nav->peph,sizeof(peph_t)*nav->nemax))) {
+        if (!(nav_peph=(peph_t *)realloc(nav->peph,sizeof(peph_t)*nav->nemax))) {
             trace(1,"readsp3b malloc error n=%d\n",nav->nemax);
-            nav->ne=nav->nemax=0;
+            free(nav->peph); nav->peph=NULL; nav->ne=nav->nemax=0;
             return 0;
         }
+        nav->peph=nav_peph;
     }
     nav->peph[nav->ne++]=*peph;
     return 1;
@@ -459,7 +465,9 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, double *bfact,
             if (strlen(buff)<4||buff[0]!='P') continue;
             
             sys=buff[1]==' '?SYS_GPS:code2sys(buff[1]);
-            prn=(int)str2num(buff,2,2)+(sys==SYS_SBS?100:0);
+            prn=(int)str2num(buff,2,2);
+            if      (sys==SYS_SBS) prn+=100;
+            else if (sys==SYS_QZS) prn+=192; /* extension to sp3-c */
             
             if (!(sat=satno(sys,prn))) continue;
             
@@ -667,7 +675,7 @@ static double interppol(const double *x, double *y, int n)
 static int pephpos(gtime_t time, int sat, const nav_t *nav, double *rs,
                    double *dts, double *vare, double *varc)
 {
-    double t[NMAX+1],p[3][NMAX+1],c[2],*pos,std,s[3],sinl,cosl;
+    double t[NMAX+1],p[3][NMAX+1],c[2],*pos,std=0.0,s[3],sinl,cosl;
     int i,j,k,index;
     
     trace(4,"pephpos : time=%s sat=%2d\n",time_str(time,3),sat);
@@ -731,12 +739,14 @@ static int pephpos(gtime_t time, int sat, const nav_t *nav, double *rs,
     c[1]=nav->peph[index+1].pos[sat-1][3];
     
     if (t[0]<=0.0) {
-        if ((dts[0]=c[0])==0.0) return 0;
-        std=nav->peph[index].std[sat-1][3]*CLIGHT-EXTERR_CLK*t[0];
+        if ((dts[0]=c[0])!=0.0) {
+            std=nav->peph[index].std[sat-1][3]*CLIGHT-EXTERR_CLK*t[0];
+        }
     }
     else if (t[1]>=0.0) {
-        if ((dts[0]=c[1])==0.0) return 0;
-        std=nav->peph[index+1].std[sat-1][3]*CLIGHT+EXTERR_CLK*t[1];
+        if ((dts[0]=c[1])!=0.0) {
+            std=nav->peph[index+1].std[sat-1][3]*CLIGHT+EXTERR_CLK*t[1];
+        }
     }
     else if (c[0]!=0.0&&c[1]!=0.0) {
         dts[0]=(c[1]*t[0]-c[0]*t[1])/(t[0]-t[1]);
@@ -744,8 +754,7 @@ static int pephpos(gtime_t time, int sat, const nav_t *nav, double *rs,
         std=nav->peph[index+i].std[sat-1][3]+EXTERR_CLK*fabs(t[i]);
     }
     else {
-        trace(3,"prec clock outage %s sat=%2d\n",time_str(time,0),sat);
-        return 0;
+        dts[0]=0.0;
     }
     if (varc) *varc=SQR(std);
     return 1;
@@ -842,7 +851,7 @@ extern void satantoff(gtime_t time, const double *rs, const pcv_t *pcv,
 *          double *rs         O   sat position and velocity (ecef)
 *                                 {x,y,z,vx,vy,vz} (m|m/s)
 *          double *dts        O   sat clock {bias,drift} (s|s/s)
-*          double *var        O   sat position and clock error variance (m)
+*          double *var        IO  sat position and clock error variance (m)
 *                                 (NULL: no output)
 * return : status (1:ok,0:error or data outage)
 * notes  : clock includes relativistic correction but does not contain code bias
@@ -880,7 +889,7 @@ extern int peph2pos(gtime_t time, int sat, const nav_t *nav, int opt,
     dts[0]=dtss[0]-2.0*dot(rs,rs+3,3)/CLIGHT/CLIGHT;
     dts[1]=(dtst[0]-dtss[0])/tt;
     
-    *var=vare+varc;
+    if (var) *var=vare+varc;
     
     return 1;
 }

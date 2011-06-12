@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 * skytraq.c : skytraq receiver dependent functions
 *
-*          Copyright (C) 2009 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2009-2011 by T.TAKASU, All rights reserved.
 *
 * reference :
 *     [1] Skytraq, Application Note AN0023 Binary Message of SkyTraq Venus 6 
@@ -15,6 +15,8 @@
 * version : $Revision:$
 * history : 2009/10/10 1.0 new
 *           2009/11/08 1.1 flip carrier-phase polarity for F/W 1.8.23-20091106
+*           2011/05/27 1.2 add almanac decoding
+*                          fix problem with ARM compiler
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -55,10 +57,11 @@ static float R4(unsigned char *p)
 }
 static double R8(unsigned char *p)
 {
-    unsigned char b[8];
-    b[0]=p[7]; b[1]=p[6]; b[2]=p[5]; b[3]=p[4];
-    b[4]=p[3]; b[5]=p[2]; b[6]=p[1]; b[7]=p[0];
-    return *(double *)b;
+    double value;
+    unsigned char *q=(unsigned char *)&value+7;
+    int i;
+    for (i=0;i<8;i++) *q--=*p++;
+    return value;
 }
 /* checksum ------------------------------------------------------------------*/
 static unsigned char checksum(unsigned char *buff, int len)
@@ -107,7 +110,7 @@ static int decode_stqraw(raw_t *raw)
     for (i=0,p+=3;i<nsat&&i<MAXOBS;i++,p+=23) {
         ind                    =U1(p+22);
         prn                    =U1(p);
-        raw->obs.data[n].SNR[0]=U1(p+1);
+        raw->obs.data[n].SNR[0]=(unsigned char)(U1(p+1)*4.0+0.5);
         raw->obs.data[n].P[0]  =(ind&0x1)?R8(p+ 2):0.0;
         raw->obs.data[n].L[0]  =(ind&0x4)?R8(p+10):0.0;
         raw->obs.data[n].D[0]  =(ind&0x2)?R4(p+18):0.0f;
@@ -167,30 +170,33 @@ static int save_subfrm(int sat, raw_t *raw)
 static int decode_ephem(int sat, raw_t *raw)
 {
     eph_t eph={0};
-    double ion[8]={0},utc[4]={0};
-    int leaps=0;
     
     trace(4,"decode_ephem: sat=%2d\n",sat);
     
-    if (decode_frame(raw->subfrm[sat-1]   ,&eph,ion,utc,&leaps)!=1) return 0;
-    if (decode_frame(raw->subfrm[sat-1]+30,&eph,ion,utc,&leaps)!=2) return 0;
-    if (decode_frame(raw->subfrm[sat-1]+60,&eph,ion,utc,&leaps)!=3) return 0;
+    if (decode_frame(raw->subfrm[sat-1]   ,&eph,NULL,NULL,NULL,NULL)!=1||
+        decode_frame(raw->subfrm[sat-1]+30,&eph,NULL,NULL,NULL,NULL)!=2||
+        decode_frame(raw->subfrm[sat-1]+60,&eph,NULL,NULL,NULL,NULL)!=3) return 0;
+    
     if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
     eph.sat=sat;
     raw->nav.eph[sat-1]=eph;
     raw->ephsat=sat;
     return 2;
 }
-/* decode ionutc -------------------------------------------------------------*/
-static int decode_ionutc(int sat, raw_t *raw)
+/* decode almanac and ion/utc ------------------------------------------------*/
+static int decode_alm1(int sat, raw_t *raw)
 {
-    eph_t eph={0};
-    double *ion_gps=raw->nav.ion_gps,*utc_gps=raw->nav.utc_gps;
-    int *leaps=&raw->nav.leaps;
-    
-    trace(4,"decode_ionutc:\n");
-    
-    return decode_frame(raw->subfrm[sat-1]+90,&eph,ion_gps,utc_gps,leaps);
+    trace(4,"decode_alm1 : sat=%2d\n",sat);
+    decode_frame(raw->subfrm[sat-1]+90,NULL,raw->nav.alm,raw->nav.ion_gps,
+                 raw->nav.utc_gps,&raw->nav.leaps);
+    return 0;
+}
+/* decode almanac ------------------------------------------------------------*/
+static int decode_alm2(int sat, raw_t *raw)
+{
+    trace(4,"decode_alm2 : sat=%2d\n",sat);
+    decode_frame(raw->subfrm[sat-1]+120,NULL,raw->nav.alm,NULL,NULL,NULL);
+    return 0;
 }
 /* decode skytraq subframe buffer --------------------------------------------*/
 static int decode_stqsfrb(raw_t *raw)
@@ -215,7 +221,8 @@ static int decode_stqsfrb(raw_t *raw)
     if (sys==SYS_GPS) {
         id=save_subfrm(sat,raw);
         if (id==3) return decode_ephem(sat,raw);
-        if (id==4) return decode_ionutc(sat,raw);
+        if (id==4) return decode_alm1 (sat,raw);
+        if (id==5) return decode_alm2 (sat,raw);
         return 0;
     }
     return 0;

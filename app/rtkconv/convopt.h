@@ -68,9 +68,14 @@ __published:
 	TEdit *ExSats;
 	TLabel *Label11;
 	TCheckBox *Freq6;
+	TCheckBox *RnxFile;
+	TLabel *Label12;
+	TEdit *RnxCode;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnOkClick(TObject *Sender);
+	void __fastcall RnxFileClick(TObject *Sender);
 private:
+	void __fastcall UpdateEnable(void);
 public:
 	__fastcall TConvOptDialog(TComponent* Owner);
 };

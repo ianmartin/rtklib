@@ -4,8 +4,8 @@ object InputStrDialog: TInputStrDialog
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'Input Streams'
-  ClientHeight = 234
-  ClientWidth = 386
+  ClientHeight = 232
+  ClientWidth = 397
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -53,32 +53,39 @@ object InputStrDialog: TInputStrDialog
     Caption = 'Cmd'
   end
   object LabelF1: TLabel
-    Left = 8
-    Top = 126
+    Left = 10
+    Top = 124
     Width = 75
     Height = 13
     Caption = 'Input File Paths'
   end
   object LabelF2: TLabel
-    Left = 164
-    Top = 211
+    Left = 166
+    Top = 209
     Width = 5
     Height = 13
     Caption = 's'
   end
   object LabelF3: TLabel
-    Left = 104
-    Top = 211
+    Left = 106
+    Top = 209
     Width = 8
     Height = 13
     Caption = '+'
   end
   object LabelNmea: TLabel
-    Left = 6
-    Top = 88
+    Left = 8
+    Top = 86
     Width = 185
     Height = 13
     Caption = 'Transmit NMEA GPGGA to Base Station'
+  end
+  object Label1: TLabel
+    Left = 372
+    Top = 3
+    Width = 18
+    Height = 13
+    Caption = 'Opt'
   end
   object StreamC2: TCheckBox
     Left = 8
@@ -86,7 +93,7 @@ object InputStrDialog: TInputStrDialog
     Width = 121
     Height = 17
     Caption = '(2) Base Station'
-    TabOrder = 7
+    TabOrder = 8
     OnClick = StreamC2Click
   end
   object StreamC1: TCheckBox
@@ -99,17 +106,17 @@ object InputStrDialog: TInputStrDialog
     OnClick = StreamC1Click
   end
   object TimeTagC: TCheckBox
-    Left = 8
-    Top = 210
+    Left = 10
+    Top = 208
     Width = 47
     Height = 17
     Caption = 'Time'
-    TabOrder = 20
+    TabOrder = 28
     OnClick = TimeTagCClick
   end
   object BtnCancel: TButton
-    Left = 296
-    Top = 208
+    Left = 308
+    Top = 206
     Width = 83
     Height = 23
     Caption = '&Cancel'
@@ -117,8 +124,8 @@ object InputStrDialog: TInputStrDialog
     TabOrder = 0
   end
   object BtnOk: TButton
-    Left = 212
-    Top = 208
+    Left = 224
+    Top = 206
     Width = 83
     Height = 23
     Caption = '&OK'
@@ -167,7 +174,7 @@ object InputStrDialog: TInputStrDialog
     Style = csDropDownList
     ItemHeight = 13
     ItemIndex = 0
-    TabOrder = 8
+    TabOrder = 9
     Text = 'Serial'
     OnChange = Stream2Change
     Items.Strings = (
@@ -189,13 +196,13 @@ object InputStrDialog: TInputStrDialog
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 9
+    TabOrder = 10
     OnClick = BtnStr2Click
   end
   object Format1: TComboBox
     Left = 276
     Top = 18
-    Width = 103
+    Width = 97
     Height = 21
     Style = csDropDownList
     DropDownCount = 16
@@ -205,12 +212,12 @@ object InputStrDialog: TInputStrDialog
   object Format2: TComboBox
     Left = 276
     Top = 40
-    Width = 103
+    Width = 97
     Height = 21
     Style = csDropDownList
     DropDownCount = 16
     ItemHeight = 13
-    TabOrder = 11
+    TabOrder = 12
   end
   object BtnCmd1: TButton
     Left = 256
@@ -239,34 +246,34 @@ object InputStrDialog: TInputStrDialog
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 10
+    TabOrder = 11
     OnClick = BtnCmd2Click
   end
   object FilePath1: TEdit
-    Left = 6
-    Top = 140
-    Width = 355
+    Left = 8
+    Top = 138
+    Width = 365
     Height = 21
-    TabOrder = 16
+    TabOrder = 24
   end
   object FilePath2: TEdit
-    Left = 6
-    Top = 162
-    Width = 355
+    Left = 8
+    Top = 160
+    Width = 365
     Height = 21
-    TabOrder = 18
+    TabOrder = 26
   end
   object TimeStartE: TEdit
-    Left = 114
-    Top = 208
+    Left = 116
+    Top = 206
     Width = 47
     Height = 21
-    TabOrder = 22
+    TabOrder = 30
     Text = '0'
   end
   object BtnFile1: TButton
-    Left = 362
-    Top = 142
+    Left = 374
+    Top = 140
     Width = 17
     Height = 19
     Caption = '...'
@@ -276,12 +283,12 @@ object InputStrDialog: TInputStrDialog
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 17
+    TabOrder = 25
     OnClick = BtnFile1Click
   end
   object BtnFile2: TButton
-    Left = 362
-    Top = 164
+    Left = 374
+    Top = 162
     Width = 17
     Height = 19
     Caption = '...'
@@ -291,18 +298,18 @@ object InputStrDialog: TInputStrDialog
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 19
+    TabOrder = 27
     OnClick = BtnFile2Click
   end
   object NmeaReqL: TComboBox
-    Left = 6
-    Top = 102
+    Left = 8
+    Top = 100
     Width = 117
     Height = 21
     Style = csDropDownList
     ItemHeight = 13
     ItemIndex = 0
-    TabOrder = 12
+    TabOrder = 20
     Text = 'OFF'
     OnChange = NmeaReqLChange
     Items.Strings = (
@@ -311,15 +318,16 @@ object InputStrDialog: TInputStrDialog
       'Single Solution')
   end
   object TimeSpeedL: TComboBox
-    Left = 56
-    Top = 208
+    Left = 58
+    Top = 206
     Width = 49
     Height = 21
     DropDownCount = 20
     ItemHeight = 13
-    TabOrder = 21
+    TabOrder = 29
     Text = 'x1'
     Items.Strings = (
+      ''
       'x0.1'
       'x0.2'
       'x0.5'
@@ -329,24 +337,24 @@ object InputStrDialog: TInputStrDialog
       'x10')
   end
   object NmeaPos1: TEdit
-    Left = 146
-    Top = 102
+    Left = 158
+    Top = 100
     Width = 107
     Height = 21
-    TabOrder = 13
+    TabOrder = 21
     Text = '0.000000000'
   end
   object NmeaPos2: TEdit
-    Left = 254
-    Top = 102
+    Left = 266
+    Top = 100
     Width = 107
     Height = 21
-    TabOrder = 14
+    TabOrder = 22
     Text = '0.000000000'
   end
   object BtnPos: TButton
-    Left = 362
-    Top = 103
+    Left = 374
+    Top = 101
     Width = 17
     Height = 19
     Caption = '...'
@@ -356,19 +364,19 @@ object InputStrDialog: TInputStrDialog
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 15
+    TabOrder = 23
     OnClick = BtnPosClick
   end
   object FilePath3: TEdit
-    Left = 6
-    Top = 184
-    Width = 355
+    Left = 8
+    Top = 182
+    Width = 365
     Height = 21
-    TabOrder = 23
+    TabOrder = 31
   end
   object BtnFile3: TButton
-    Left = 362
-    Top = 186
+    Left = 374
+    Top = 184
     Width = 17
     Height = 19
     Caption = '...'
@@ -378,7 +386,7 @@ object InputStrDialog: TInputStrDialog
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 24
+    TabOrder = 32
     OnClick = BtnFile3Click
   end
   object StreamC3: TCheckBox
@@ -387,7 +395,7 @@ object InputStrDialog: TInputStrDialog
     Width = 121
     Height = 17
     Caption = '(3) Correction'
-    TabOrder = 25
+    TabOrder = 14
     OnClick = StreamC2Click
   end
   object Stream3: TComboBox
@@ -398,7 +406,7 @@ object InputStrDialog: TInputStrDialog
     Style = csDropDownList
     ItemHeight = 13
     ItemIndex = 0
-    TabOrder = 26
+    TabOrder = 15
     Text = 'Serial'
     OnChange = Stream3Change
     Items.Strings = (
@@ -422,18 +430,18 @@ object InputStrDialog: TInputStrDialog
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 27
+    TabOrder = 16
     OnClick = BtnStr3Click
   end
   object Format3: TComboBox
     Left = 276
     Top = 62
-    Width = 103
+    Width = 97
     Height = 21
     Style = csDropDownList
     DropDownCount = 16
     ItemHeight = 13
-    TabOrder = 28
+    TabOrder = 18
   end
   object BtnCmd3: TButton
     Left = 256
@@ -447,8 +455,53 @@ object InputStrDialog: TInputStrDialog
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 29
+    TabOrder = 17
     OnClick = BtnCmd3Click
+  end
+  object BtnRcvOpt1: TButton
+    Left = 374
+    Top = 18
+    Width = 17
+    Height = 19
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 7
+    OnClick = BtnRcvOpt1Click
+  end
+  object BtnRcvOpt2: TButton
+    Left = 374
+    Top = 40
+    Width = 17
+    Height = 19
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 13
+    OnClick = BtnRcvOpt2Click
+  end
+  object BtnRcvOpt3: TButton
+    Left = 374
+    Top = 62
+    Width = 17
+    Height = 19
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 19
+    OnClick = BtnRcvOpt3Click
   end
   object OpenDialog: TOpenDialog
     Filter = 
@@ -457,7 +510,7 @@ object InputStrDialog: TInputStrDialog
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     OptionsEx = [ofExNoPlacesBar]
     Title = 'Input File Path'
-    Left = 176
-    Top = 204
+    Left = 178
+    Top = 202
   end
 end

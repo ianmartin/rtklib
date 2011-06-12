@@ -16,7 +16,7 @@
 *                            separate readsol.c file
 *           2009/01/19  1.3  fix bug on display mark with by-q-flag option
 *           2010/05/10  1.4  support api readsolt() change
-*           2010/08/14  1.5  fix bug on readsolt()
+*           2010/08/14  1.5  fix bug on readsolt() (2.4.0_p3)
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -97,16 +97,17 @@ static int savekml(const char *file, const solbuf_t *solbuf, int tcolor,
 {
     FILE *fp;
     double pos[3];
-    int i,qcolor[]={0,1,2,0,4,3,0};
-    char *color[]={"ffffffff","ff008800","ff00aaff","ff0000ff","ff00ffff"};
-    
+    int i,qcolor[]={0,1,2,5,4,3,0};
+    char *color[]={
+        "ffffffff","ff008800","ff00aaff","ff0000ff","ff00ffff","ffff00ff"
+    };
     if (!(fp=fopen(file,"w"))) {
         fprintf(stderr,"file open error : %s\n",file);
         return 0;
     }
     fprintf(fp,"%s\n%s\n",HEADKML1,HEADKML2);
     fprintf(fp,"<Document>\n");
-    for (i=0;i<5;i++) {
+    for (i=0;i<6;i++) {
         fprintf(fp,"<Style id=\"P%d\">\n",i);
         fprintf(fp,"  <IconStyle>\n");
         fprintf(fp,"    <color>%s</color>\n",color[i]);

@@ -1,7 +1,7 @@
 function testpeph1
 
 C=299792458.0;
-dirs='../data';
+dirs='../data/sp3';
 td=caltomjd([2010,7,1]);
 time=0:30:86400*2-30;
 

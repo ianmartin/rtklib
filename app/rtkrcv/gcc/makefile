@@ -5,7 +5,7 @@ SRC    = ../../../src
 
 # for beagleboard
 #CTARGET= -mfpu=neon -mfloat-abi=softfp -ffast-math
-CTARGET= -DENAGLO
+CTARGET= -DENAGLO -DENAQZS -DNFREQ=3
 
 CFLAGS = -Wall -O3 -ansi -pedantic -I$(SRC) -DTRACE $(CTARGET)
 LDLIBS  = -lm -lpthread
@@ -13,7 +13,8 @@ LDLIBS  = -lm -lpthread
 all        : rtkrcv
 rtkrcv     : rtkrcv.o rtkcmn.o rtksvr.o rtkpos.o geoid.o solution.o lambda.o
 rtkrcv     : sbas.o stream.o rcvraw.o rtcm.o preceph.o options.o pntpos.o ppp.o
-rtkrcv     : novatel.o ublox.o ss2.o crescent.o skytraq.o ephemeris.o rinex.o
+rtkrcv     : novatel.o ublox.o ss2.o crescent.o skytraq.o gw10.o javad.o
+rtkrcv     : ephemeris.o rinex.o ionex.o
 
 rtkrcv.o   : ../rtkrcv.c
 	$(CC) -c $(CFLAGS) ../rtkrcv.c
@@ -55,10 +56,16 @@ crescent.o : $(SRC)/rcv/crescent.c
 	$(CC) -c $(CFLAGS) $(SRC)/rcv/crescent.c
 skytraq.o  : $(SRC)/rcv/skytraq.c
 	$(CC) -c $(CFLAGS) $(SRC)/rcv/skytraq.c
+gw10.o     : $(SRC)/rcv/gw10.c
+	$(CC) -c $(CFLAGS) $(SRC)/rcv/gw10.c
+javad.o    : $(SRC)/rcv/javad.c
+	$(CC) -c $(CFLAGS) $(SRC)/rcv/javad.c
 ephemeris.o: $(SRC)/ephemeris.c
 	$(CC) -c $(CFLAGS) $(SRC)/ephemeris.c
 rinex.o    : $(SRC)/rinex.c
 	$(CC) -c $(CFLAGS) $(SRC)/rinex.c
+ionex.o    : $(SRC)/ionex.c
+	$(CC) -c $(CFLAGS) $(SRC)/ionex.c
 
 rtkrcv.o   : $(SRC)/rtklib.h
 rtkcmn.o   : $(SRC)/rtklib.h
@@ -79,14 +86,17 @@ ublox.o    : $(SRC)/rtklib.h
 ss2.o      : $(SRC)/rtklib.h
 crescent.o : $(SRC)/rtklib.h
 skytraq.o  : $(SRC)/rtklib.h
+gw10.o     : $(SRC)/rtklib.h
+javad.o    : $(SRC)/rtklib.h
 ephemeris.o: $(SRC)/rtklib.h
 rinex.o    : $(SRC)/rtklib.h
+ionex.o    : $(SRC)/rtklib.h
 
 install:
 	cp rtkrcv $(BINDIR)
 
 test1:
-	./rtkrcv -t 4 -m 52001
+	./rtkrcv -t 4 -m 52001 -t 4
 
 test2:
 	./rtkrcv -p 2105 -m 52001

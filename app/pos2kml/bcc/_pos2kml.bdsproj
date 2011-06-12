@@ -94,11 +94,9 @@
           <property category="win32.*.win32b.bcc32" name="option.Hs.enabled" value="0"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.1" value="..\"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.2" value="..\..\..\src"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.3" value="G:\rtklib_2.2.0b\app\pos2kml"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.4" value="G:\rtklib_2.2.0b\app\pos2kml\bcc"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.5" value="$(BDS)\include"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.6" value="$(BDS)\include\dinkumware"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.7" value="$(BDS)\include\vcl"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.3" value="$(BDS)\include"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.4" value="$(BDS)\include\dinkumware"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.5" value="$(BDS)\include\vcl"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.I.enabled" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.O1.enabled" value="0"/>

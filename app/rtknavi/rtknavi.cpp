@@ -19,6 +19,7 @@ USEFORM("instrdlg.cpp", InputStrDialog);
 USEFORM("logstrdlg.cpp", LogStrDialog);
 USEFORM("..\appcmn\keydlg.cpp", KeyDialog);
 USEFORM("..\appcmn\ftpoptdlg.cpp", FtpOptDialog);
+USEFORM("rcvoptdlg.cpp", RcvOptDialog);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -41,6 +42,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->CreateForm(__classid(TLogStrDialog), &LogStrDialog);
 		Application->CreateForm(__classid(TKeyDialog), &KeyDialog);
 		Application->CreateForm(__classid(TFtpOptDialog), &FtpOptDialog);
+		Application->CreateForm(__classid(TRcvOptDialog), &RcvOptDialog);
 		Application->Run();
 	}
 	catch (Exception &exception)

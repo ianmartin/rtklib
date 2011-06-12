@@ -38,6 +38,8 @@ void __fastcall TConvOptDialog::FormShow(TObject *Sender)
 {
 	AnsiString s;
 	RnxVer->ItemIndex=MainWindow->RnxVer;
+	RnxFile->Checked=MainWindow->RnxFile;
+	RnxCode->Text=MainWindow->RnxCode;
 	RunBy->Text=MainWindow->RunBy;
 	Marker->Text=MainWindow->Marker;
 	MarkerNo->Text=MainWindow->MarkerNo;
@@ -73,16 +75,20 @@ void __fastcall TConvOptDialog::FormShow(TObject *Sender)
 	Freq1->Checked=MainWindow->FreqType&FREQTYPE_L1;
 	Freq2->Checked=MainWindow->FreqType&FREQTYPE_L2;
 	Freq3->Checked=MainWindow->FreqType&FREQTYPE_L5;
-	Freq4->Checked=MainWindow->FreqType&FREQTYPE_L7;
-	Freq5->Checked=MainWindow->FreqType&FREQTYPE_L6;
+	Freq4->Checked=MainWindow->FreqType&FREQTYPE_L6;
+	Freq5->Checked=MainWindow->FreqType&FREQTYPE_L7;
 	Freq6->Checked=MainWindow->FreqType&FREQTYPE_L8;
 	ExSats->Text=MainWindow->ExSats;
 	TraceLevel->ItemIndex=MainWindow->TraceLevel;
+	
+	UpdateEnable();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConvOptDialog::BtnOkClick(TObject *Sender)
 {
 	MainWindow->RnxVer=RnxVer->ItemIndex;
+	MainWindow->RnxFile=RnxFile->Checked;
+	MainWindow->RnxCode=RnxCode->Text;
 	MainWindow->RunBy=RunBy->Text;
 	MainWindow->Marker=Marker->Text;
 	MainWindow->MarkerNo=MarkerNo->Text;
@@ -118,14 +124,25 @@ void __fastcall TConvOptDialog::BtnOkClick(TObject *Sender)
 	if (Freq1->Checked) freqtype|=FREQTYPE_L1;
 	if (Freq2->Checked) freqtype|=FREQTYPE_L2;
 	if (Freq3->Checked) freqtype|=FREQTYPE_L5;
-	if (Freq4->Checked) freqtype|=FREQTYPE_L7;
-	if (Freq5->Checked) freqtype|=FREQTYPE_L6;
+	if (Freq4->Checked) freqtype|=FREQTYPE_L6;
+	if (Freq5->Checked) freqtype|=FREQTYPE_L7;
 	if (Freq6->Checked) freqtype|=FREQTYPE_L8;
 	MainWindow->NavSys=navsys;
 	MainWindow->ObsType=obstype;
 	MainWindow->FreqType=freqtype;
 	MainWindow->ExSats=ExSats->Text;
 	MainWindow->TraceLevel=TraceLevel->ItemIndex;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConvOptDialog::RnxFileClick(TObject *Sender)
+{
+	UpdateEnable();	
+}
+//---------------------------------------------------------------------------
+void __fastcall TConvOptDialog::UpdateEnable(void)
+{
+//	RnxCode->Enabled=RnxFile->Checked;
+//	Label12->Enabled=RnxFile->Checked;
 }
 //---------------------------------------------------------------------------
 

@@ -105,10 +105,9 @@
           <property category="win32.*.win32b.bcc32" name="option.I.arg.1" value="..\..\src\rcv"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.2" value="..\appcmn"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.3" value="..\..\src"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.4" value="G:\rtklib_2.1.1\app\rtksvr"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.5" value="$(BDS)\include"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.6" value="$(BDS)\include\dinkumware"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.7" value="$(BDS)\include\vcl"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.4" value="$(BDS)\include"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.5" value="$(BDS)\include\dinkumware"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.6" value="$(BDS)\include\vcl"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.I.enabled" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.Jgi.enabled" value="0"/>
@@ -143,38 +142,48 @@
           <property category="win32.*.win32b.bcc32" name="option.tWM.enabled" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.w.enabled" value="0"/>
           <property category="win32.*.win32b.bcc32" name="option.wpia.enabled" value="0"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.1" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.2" value="..\appcmn"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.3" value="..\..\src"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.4" value="G:\rtklib_2.1.1\app\rtksvr"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.3" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.4" value="..\appcmn"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.5" value="..\..\src"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.6" value="G:\rtklib_2.1.1\app\rtksvr"/>
           <property category="win32.*.win32b.dcc32" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.I.enabled" value="0"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.1" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.2" value="..\appcmn"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.3" value="..\..\src"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.4" value="G:\rtklib_2.1.1\app\rtksvr"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.3" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.4" value="..\appcmn"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.5" value="..\..\src"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.6" value="G:\rtklib_2.1.1\app\rtksvr"/>
           <property category="win32.*.win32b.dcc32" name="option.O.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.O.enabled" value="0"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.1" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.2" value="..\appcmn"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.3" value="..\..\src"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.4" value="G:\rtklib_2.1.1\app\rtksvr"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.3" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.4" value="..\appcmn"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.5" value="..\..\src"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.6" value="G:\rtklib_2.1.1\app\rtksvr"/>
           <property category="win32.*.win32b.dcc32" name="option.R.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.R.enabled" value="0"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.1" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.2" value="..\appcmn"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.3" value="..\..\src"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.4" value="G:\rtklib_2.1.1\app\rtksvr"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.5" value="C:\Users\ttaka\Documents\Borland Studio Projects"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.6" value="$(BDS)\lib"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.7" value="$(BDS)\lib\obj"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.3" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.4" value="..\appcmn"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.5" value="..\..\src"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.6" value="G:\rtklib_2.1.1\app\rtksvr"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.7" value="C:\Users\ttaka\Documents\Borland Studio Projects"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.8" value="$(BDS)\lib"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.9" value="$(BDS)\lib\obj"/>
           <property category="win32.*.win32b.dcc32" name="option.U.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.U.enabled" value="1"/>
           <property category="win32.*.win32b.dcc32" name="param.filenames.merge" value="1"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.1" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.2" value="..\appcmn"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.3" value="..\..\src"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.4" value="G:\rtklib_2.1.1\app\rtksvr"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.3" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.4" value="..\appcmn"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.5" value="..\..\src"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.6" value="G:\rtklib_2.1.1\app\rtksvr"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="container.SelectedWarnings.containerenabled" value="1"/>
@@ -182,13 +191,15 @@
           <property category="win32.*.win32b.ilink32" name="option.Gi.enabled" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.Gpd.enabled" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.Gpr.enabled" value="0"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.1" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.2" value="..\appcmn"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.3" value="..\..\src"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.4" value="G:\rtklib_2.1.1\app\rtksvr"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.5" value="$(BDS)\lib"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.6" value="$(BDS)\lib\obj"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.7" value="$(BDS)\lib\psdk"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.3" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.4" value="..\appcmn"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.5" value="..\..\src"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.6" value="G:\rtklib_2.1.1\app\rtksvr"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.7" value="$(BDS)\lib"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.8" value="$(BDS)\lib\obj"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.9" value="$(BDS)\lib\psdk"/>
           <property category="win32.*.win32b.ilink32" name="option.L.arg.merge" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.L.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.Tpd.enabled" value="0"/>
@@ -197,10 +208,12 @@
           <property category="win32.*.win32b.ilink32" name="option.aa.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.ap.enabled" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.dynamicrtl.enabled" value="0"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.1" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.2" value="..\appcmn"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.3" value="..\..\src"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.4" value="G:\rtklib_2.1.1\app\rtksvr"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.3" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.4" value="..\appcmn"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.5" value="..\..\src"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.6" value="G:\rtklib_2.1.1\app\rtksvr"/>
           <property category="win32.*.win32b.ilink32" name="option.j.arg.merge" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.j.enabled" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.m.enabled" value="0"/>
@@ -246,6 +259,9 @@
         <FILE FILENAME="..\appcmn\keydlg.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="keydlg" FORMNAME="KeyDialog" DESIGNCLASS="" ADDITIONAL="..\appcmn\keydlg.h"/>
         <FILE FILENAME="..\appcmn\console.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="console" FORMNAME="Console" DESIGNCLASS="" ADDITIONAL="..\appcmn\console.h"/>
         <FILE FILENAME="..\..\src\streamsvr.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="streamsvr" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rcv\gw10.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="gw10" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rcv\javad.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="javad" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="convdlg.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="convdlg" FORMNAME="ConvDialog" DESIGNCLASS="" ADDITIONAL="convdlg.h"/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>
@@ -279,7 +295,7 @@
           <Debugging Name="DebugSourceDirs"></Debugging>
         </Debugging>
         <Parameters>
-          <Parameters Name="RunParams"></Parameters>
+          <Parameters Name="RunParams">-t NovAtel</Parameters>
           <Parameters Name="Launcher"></Parameters>
           <Parameters Name="UseLauncher">False</Parameters>
           <Parameters Name="DebugCWD"></Parameters>

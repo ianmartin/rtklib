@@ -11,7 +11,7 @@
 *           2009/12/12  1.4 support glonass
 *                           add option -h, -a, -l, -x
 *           2010/01/28  1.5 add option -k
-*           2010/08/12  1.6 add option -y implementation
+*           2010/08/12  1.6 add option -y implementation (2.4.0_p1)
 *-----------------------------------------------------------------------------*/
 #include <stdarg.h>
 #include "rtklib.h"

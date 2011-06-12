@@ -69,8 +69,8 @@ object MonitorDialog: TMonitorDialog
     Align = alTop
     TabOrder = 1
     object Label: TLabel
-      Left = 164
-      Top = 6
+      Left = 180
+      Top = 5
       Width = 3
       Height = 13
       Font.Charset = DEFAULT_CHARSET
@@ -233,7 +233,7 @@ object MonitorDialog: TMonitorDialog
       Height = 21
       AutoComplete = False
       Style = csDropDownList
-      DropDownCount = 25
+      DropDownCount = 28
       ItemHeight = 13
       ItemIndex = 0
       TabOrder = 0
@@ -249,6 +249,7 @@ object MonitorDialog: TMonitorDialog
         'Nav GPS/GAL/QZS'
         'Nav GLONASS'
         'Nav GEO'
+        'Time/Iono'
         'Streams'
         'SBAS Msgs'
         'SBAS Long'
@@ -257,6 +258,10 @@ object MonitorDialog: TMonitorDialog
         'RTCM Msgs'
         'RTCM DGPS'
         'RTCM SSR'
+        'LEX Msgs'
+        'LEX Eph/Clock'
+        'LEX Iono'
+        'Iono Correction'
         '(1) Rover'
         '(2) Base Station'
         '(3) Correction'
@@ -265,7 +270,7 @@ object MonitorDialog: TMonitorDialog
         'Error/Warning')
     end
     object SelEph: TComboBox
-      Left = 95
+      Left = 162
       Top = 2
       Width = 66
       Height = 21
@@ -296,6 +301,44 @@ object MonitorDialog: TMonitorDialog
         '(1) Rover'
         '(2) Base Station'
         '(3) Correction')
+    end
+    object SelSat: TComboBox
+      Left = 95
+      Top = 2
+      Width = 66
+      Height = 21
+      Hint = 'Stream'
+      Style = csDropDownList
+      ItemHeight = 13
+      ItemIndex = 0
+      TabOrder = 4
+      Text = 'All'
+      Visible = False
+      Items.Strings = (
+        'All'
+        'Only OK')
+    end
+    object SelIon: TComboBox
+      Left = 95
+      Top = 1
+      Width = 80
+      Height = 21
+      Hint = 'Stream'
+      Style = csDropDownList
+      ItemHeight = 13
+      ItemIndex = 0
+      TabOrder = 5
+      Text = 'OFF'
+      Visible = False
+      Items.Strings = (
+        'OFF'
+        'Broadcast'
+        'SBAS'
+        'Dual-Freq'
+        'Estimate STEC'
+        'IONEX TEC'
+        'QZS Broadcast'
+        'QZS LEX')
     end
   end
   object Scroll: TScrollBar

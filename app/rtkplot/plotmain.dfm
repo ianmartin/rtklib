@@ -2,7 +2,7 @@ object Plot: TPlot
   Left = 0
   Top = 0
   Caption = 'RTKPLOT'
-  ClientHeight = 485
+  ClientHeight = 486
   ClientWidth = 632
   Color = clBtnFace
   Constraints.MinHeight = 100
@@ -11,9 +11,13 @@ object Plot: TPlot
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  KeyPreview = True
   Menu = MainMenu
   OldCreateOrder = False
+  OnActivate = FormActivate
+  OnClose = FormClose
   OnCreate = FormCreate
+  OnKeyDown = FormKeyDown
   OnMouseWheel = MouseWheel
   OnResize = FormResize
   OnShow = FormShow
@@ -23,8 +27,10 @@ object Plot: TPlot
     Left = 0
     Top = 21
     Width = 632
-    Height = 446
+    Height = 447
     Align = alClient
+    Color = clGray
+    ParentColor = False
     OnMouseDown = DispMouseDown
     OnMouseLeave = DispMouseLeave
     OnMouseMove = DispMouseMove
@@ -35,7 +41,7 @@ object Plot: TPlot
   end
   object Panel2: TPanel
     Left = 0
-    Top = 467
+    Top = 468
     Width = 632
     Height = 18
     Align = alBottom
@@ -250,20 +256,29 @@ object Plot: TPlot
         ShowHint = True
         OnClick = BtnClearClick
       end
-      object StrStatus: TPanel
-        Left = 186
+      object StrStatus1: TPanel
+        Left = 182
         Top = 6
-        Width = 10
+        Width = 8
         Height = 10
         BevelInner = bvRaised
         BevelOuter = bvLowered
         TabOrder = 0
       end
+      object StrStatus2: TPanel
+        Left = 190
+        Top = 6
+        Width = 8
+        Height = 10
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        TabOrder = 1
+      end
     end
     object Panel10: TPanel
       Left = 0
       Top = 0
-      Width = 365
+      Width = 395
       Height = 21
       Align = alLeft
       BevelOuter = bvNone
@@ -423,7 +438,7 @@ object Plot: TPlot
         OnClick = BtnCenterOriClick
       end
       object BtnFixHoriz: TSpeedButton
-        Left = 302
+        Left = 310
         Top = 1
         Width = 20
         Height = 19
@@ -544,7 +559,7 @@ object Plot: TPlot
         OnClick = BtnConnectClick
       end
       object BtnFitHoriz: TSpeedButton
-        Left = 236
+        Left = 250
         Top = 1
         Width = 20
         Height = 19
@@ -576,7 +591,7 @@ object Plot: TPlot
         OnClick = BtnFitHorizClick
       end
       object BtnFitVert: TSpeedButton
-        Left = 256
+        Left = 270
         Top = 1
         Width = 20
         Height = 19
@@ -608,7 +623,7 @@ object Plot: TPlot
         OnClick = BtnFitVertClick
       end
       object BtnShowTrack: TSpeedButton
-        Left = 282
+        Left = 290
         Top = 1
         Width = 20
         Height = 19
@@ -663,7 +678,7 @@ object Plot: TPlot
         OnClick = BtnShowTrackClick
       end
       object BtnFixVert: TSpeedButton
-        Left = 322
+        Left = 330
         Top = 1
         Width = 20
         Height = 19
@@ -744,11 +759,11 @@ object Plot: TPlot
         OnClick = BtnOn1Click
       end
       object BtnShowPoint: TSpeedButton
-        Left = 344
+        Left = 372
         Top = 1
         Width = 20
         Height = 19
-        Hint = 'Show Waypoints'
+        Hint = 'Show Map Path/Waypoints'
         AllowAllUp = True
         GroupIndex = 14
         Flat = True
@@ -775,6 +790,63 @@ object Plot: TPlot
         ParentShowHint = False
         ShowHint = True
         OnClick = BtnShowPointClick
+      end
+      object BtnShowMap: TSpeedButton
+        Left = 352
+        Top = 1
+        Width = 20
+        Height = 19
+        Hint = 'Map Image'
+        AllowAllUp = True
+        GroupIndex = 15
+        Flat = True
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBtnText
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        Glyph.Data = {
+          3E020000424D3E0200000000000036000000280000000D0000000D0000000100
+          18000000000008020000000000000000000000000000000000007F7F7F7F7F7F
+          7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F
+          7F007F7F7F2734262C372C2631263D4D3D60675B637060555B4D4D5547FCFBFB
+          ECE1D8A59B957F7F7F007F7F7F2C382C222F222C3D2C3A453A354134A7A499E8
+          DFDAA3A398717268E1CEC8E9D4CD7F7F7F007F7F7F1C2A1B445444445044E2DB
+          D0F5EDE8FAF8F8F7F5F5D9C3BAFEEEEBF3E3E4F1D8D37F7F7F007F7F7F242F24
+          1E2B1E626A60B6AFA6FFFEFDFFFDFBFBFBFBFDFAF3FEF0EAFFFEFDFDEEE77F7F
+          7F007F7F7F1F2B1F363C2F353E33D7C5B7F0DCD5F1EBE7FFFFFEFDE2D8FFEEE5
+          FEF9F5F2E8E27F7F7F007F7F7F3A463A2C392C48493FB3AF9F636251A1998BFD
+          EFEBF2D6CFFAE1DAF4EAE5D2C0B57F7F7F007F7F7F1825181928194F53486360
+          53585541BBB8A8837B67C8B6A8A6A3956F71674E59477F7F7F007F7F7F18281C
+          0D1D0E0D1D0F3B3B2A64604B5453449C9384847A656762553B47373945377F7F
+          7F007F7F7F19281A09120A545E527171616A69577675669C9687BAB6A74A5043
+          343F2F2C3B2C7F7F7F007F7F7F0D1F130B1D0F182518303A2E353D304F51457F
+          7F701622161A271A1D291B2F392B7F7F7F007F7F7F0E1F15081B0F0B1A120D1B
+          1109150C020D0304130A1D281F172317283629212E217F7F7F007F7F7F7F7F7F
+          7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F
+          7F00}
+        ParentFont = False
+        ParentShowHint = False
+        ShowHint = True
+        Spacing = 2
+        OnClick = BtnShowMapClick
+      end
+      object BtnRangeList: TSpeedButton
+        Left = 236
+        Top = 1
+        Width = 13
+        Height = 19
+        Flat = True
+        Glyph.Data = {
+          DE000000424DDE00000000000000360000002800000007000000070000000100
+          180000000000A800000000000000000000000000000000000000FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFF000000FFFFFFFFFFFFFFFFFF000000FFFFFFFFFFFFFFFFFF00
+          0000FFFFFFFFFFFF000000000000000000FFFFFFFFFFFF000000FFFFFF000000
+          000000000000000000000000FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000}
+        OnClick = BtnRangeListClick
       end
       object DopType: TComboBox
         Left = 166
@@ -895,7 +967,7 @@ object Plot: TPlot
         Height = 21
         Hint = 'Satllite List'
         Style = csDropDownList
-        DropDownCount = 35
+        DropDownCount = 40
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -11
@@ -916,7 +988,7 @@ object Plot: TPlot
         Height = 21
         Hint = 'Satllite List'
         Style = csDropDownList
-        DropDownCount = 35
+        DropDownCount = 40
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -11
@@ -930,17 +1002,38 @@ object Plot: TPlot
         Visible = False
         OnChange = SatListChange
       end
+      object SatList3: TComboBox
+        Left = 166
+        Top = 0
+        Width = 51
+        Height = 21
+        Hint = 'Satllite List'
+        Style = csDropDownList
+        DropDownCount = 40
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ItemHeight = 0
+        ParentFont = False
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 6
+        Visible = False
+        OnChange = SatListChange
+      end
     end
     object Panel12: TPanel
-      Left = 365
+      Left = 395
       Top = 0
-      Width = 141
+      Width = 140
       Height = 21
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 2
       object BtnAnimate: TSpeedButton
-        Left = 2
+        Left = 0
         Top = 1
         Width = 19
         Height = 19
@@ -1020,8 +1113,8 @@ object Plot: TPlot
         ShowHint = True
         OnClick = BtnAnimateClick
       end
-      object SolScroll: TScrollBar
-        Left = 24
+      object TimeScroll: TScrollBar
+        Left = 22
         Top = 4
         Width = 113
         Height = 14
@@ -1032,28 +1125,40 @@ object Plot: TPlot
         ShowHint = True
         TabOrder = 0
         TabStop = False
-        OnChange = SolScrollChange
-      end
-      object ObsScroll: TScrollBar
-        Left = 24
-        Top = 4
-        Width = 113
-        Height = 14
-        Hint = 'Time Scroll'
-        LargeChange = 10
-        PageSize = 0
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 1
-        TabStop = False
-        OnChange = SolScrollChange
+        OnChange = TimeScrollChange
       end
     end
   end
+  object RangeList: TListBox
+    Left = 216
+    Top = 20
+    Width = 33
+    Height = 145
+    BevelInner = bvNone
+    BevelKind = bkFlat
+    BevelOuter = bvRaised
+    BorderStyle = bsNone
+    ItemHeight = 13
+    Items.Strings = (
+      '0.05'
+      '0.1'
+      '0.2'
+      '0.5'
+      '1'
+      '2'
+      '5'
+      '10'
+      '20'
+      '50'
+      '100')
+    TabOrder = 2
+    Visible = False
+    OnClick = RangeListClick
+  end
   object OpenSolDialog: TOpenDialog
     Filter = 
-      'All (*.*)|*.*|Solution (*.txt,*.csv,*.pos,*.gps,*.ubx,*.bin)|*.t' +
-      'xt;*.csv;*.pos;*.gps;*.ubx;*.bin'
+      'Solution File (*.txt,*.csv,*.pos,*.gps,*.ubx,*.bin)|*.txt;*.csv;' +
+      '*.pos;*.gps;*.ubx;*.bin|All (*.*)|*.*'
     Options = [ofHideReadOnly, ofNoChangeDir, ofAllowMultiSelect, ofEnableSizing]
     OptionsEx = [ofExNoPlacesBar]
     Title = 'Open Solution'
@@ -1074,6 +1179,14 @@ object Plot: TPlot
         Caption = 'Open Solution-&2...'
         OnClick = MenuOpenSol2Click
       end
+      object MenuOpenMapImage: TMenuItem
+        Caption = 'Open &Map Image...'
+        OnClick = MenuOpenMapImageClick
+      end
+      object MenuOpenMapPath: TMenuItem
+        Caption = 'Open Map &Path...'
+        OnClick = MenuOpenMapPathClick
+      end
       object N9: TMenuItem
         Caption = '-'
       end
@@ -1087,9 +1200,9 @@ object Plot: TPlot
         ShortCut = 16462
         OnClick = MenuOpenNavClick
       end
-      object MenuElevMask: TMenuItem
+      object MenuOpenElevMask: TMenuItem
         Caption = 'Open Elev Mask...'
-        OnClick = MenuElevMaskClick
+        OnClick = MenuOpenElevMaskClick
       end
       object N5: TMenuItem
         Caption = '-'
@@ -1136,6 +1249,15 @@ object Plot: TPlot
         Caption = '&Time Span/Interval...'
         OnClick = MenuTimeClick
       end
+      object MenuMapImg: TMenuItem
+        Caption = '&Map Image...'
+        OnClick = MenuMapImgClick
+      end
+      object MenuWaypnt: TMenuItem
+        Caption = '&Waypoints...'
+        ShortCut = 16471
+        OnClick = MenuWaypointClick
+      end
       object N13: TMenuItem
         Caption = '-'
       end
@@ -1164,6 +1286,7 @@ object Plot: TPlot
       end
       object MenuOptions: TMenuItem
         Caption = '&Options...'
+        ShortCut = 16464
         OnClick = MenuOptionsClick
       end
     end
@@ -1182,28 +1305,30 @@ object Plot: TPlot
       object N11: TMenuItem
         Caption = '-'
       end
-      object MenuPoint: TMenuItem
-        Caption = '&Waypoints...'
-        ShortCut = 16471
-        OnClick = MenuPointClick
+      object MenuMonitor1: TMenuItem
+        Caption = 'Input Monitor &1...'
+        OnClick = MenuMonitor1Click
       end
-      object MenuMonitor: TMenuItem
-        Caption = 'Input &Monitor...'
-        OnClick = MenuMonitorClick
+      object MenuMonitor2: TMenuItem
+        Caption = 'Input Monitor &2...'
+        OnClick = MenuMonitor2Click
       end
       object N7: TMenuItem
         Caption = '-'
       end
       object MenuCenterOri: TMenuItem
         Caption = '&Center Origin'
+        ShortCut = 16466
         OnClick = MenuCenterOriClick
       end
       object MenuFitHoriz: TMenuItem
         Caption = 'Fit &Horizontal'
+        ShortCut = 16456
         OnClick = MenuFitHorizClick
       end
       object MenuFitVert: TMenuItem
         Caption = 'Fit &Vertical'
+        ShortCut = 16470
         OnClick = MenuFitVertClick
       end
       object N3: TMenuItem
@@ -1224,8 +1349,12 @@ object Plot: TPlot
       object N12: TMenuItem
         Caption = '-'
       end
+      object MenuShowMap: TMenuItem
+        Caption = 'Show Map &Image'
+        OnClick = MenuShowMapClick
+      end
       object MenuShowPoint: TMenuItem
-        Caption = 'Show &Waypoints'
+        Caption = 'Show Map Path/&Waypoints'
         OnClick = MenuShowPointClick
       end
       object N6: TMenuItem
@@ -1251,9 +1380,10 @@ object Plot: TPlot
   end
   object OpenObsDialog: TOpenDialog
     Filter = 
-      'All (*.*)|*.*|RINEX OBS (*.obs,*.*o,*.*d)|*.obs;*.*o;*.*o.gz;*.*' +
-      'o.Z;*.*d;*.*d.gz;*.*d.Z|RINEX NAV (*.nav,*.gnav,*.*n,*.*g)|*.nav' +
-      ';*.gnav;*.*n;*.*g'
+      'RINEX OBS (*.obs,*.*o,*.*d)|*.obs;*.*o;*.*o.gz;*.*o.Z;*.*d;*.*d.' +
+      'gz;*.*d.Z|RINEX NAV (*.nav,*.gnav,*.hnav,*.qnav,*.*n,*.*g,*.*h,*' +
+      '.*q,*.*p)|*.nav;*.gnav;*.hnav;*.qnav;*.*n;*.*g;*.*h;*.*q;*.*p|Al' +
+      'l (*.*)|*.*'
     Options = [ofHideReadOnly, ofNoChangeDir, ofAllowMultiSelect, ofEnableSizing]
     OptionsEx = [ofExNoPlacesBar]
     Title = 'Open Raw Obs/Nav Messages'
@@ -1267,11 +1397,27 @@ object Plot: TPlot
     Top = 190
   end
   object OpenElMaskDialog: TOpenDialog
-    Filter = 'All Files (*.*)|*.*'
+    Filter = 'Text File (*.txt)|*.txt|All (*.*)|*.*'
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     OptionsEx = [ofExNoPlacesBar]
     Title = 'Open Elev Mask'
     Left = 336
     Top = 190
+  end
+  object OpenMapDialog: TOpenDialog
+    Filter = 'JPEG File (*.jpg,*.jpeg)|*.jpg;*.jpeg|All (*.*)|*.*'
+    OptionsEx = [ofExNoPlacesBar]
+    Title = 'Open Map Image'
+    Left = 274
+    Top = 220
+  end
+  object OpenMapPathDialog: TOpenDialog
+    Filter = 
+      'Text File (*.txt)|*.txt|Position File (*.pos)|*.pos|All (*.*)|*.' +
+      '*'
+    OptionsEx = [ofExNoPlacesBar]
+    Title = 'Open Map Path'
+    Left = 306
+    Top = 220
   end
 end

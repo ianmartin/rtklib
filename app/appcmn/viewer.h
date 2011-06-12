@@ -10,6 +10,9 @@
 #include <Dialogs.hpp>
 #include <ComCtrls.hpp>
 #include <Buttons.hpp>
+
+#define MAXLINE		20000
+
 //---------------------------------------------------------------------------
 class TTextViewer : public TForm
 {
@@ -23,17 +26,21 @@ __published:
 	TSpeedButton *BtnReload;
 	TRichEdit *Text;
 	TSaveDialog *SaveDialog;
+	TEdit *FindStr;
+	TButton *BtnFind;
 	void __fastcall BtnCloseClick(TObject *Sender);
 	void __fastcall BtnReadClick(TObject *Sender);
 	void __fastcall BtnOptClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnReloadClick(TObject *Sender);
+	void __fastcall BtnFindClick(TObject *Sender);
+	void __fastcall FindStrKeyPress(TObject *Sender, char &Key);
 private:
-	TStringList *TextBuff;
 	AnsiString File;
-	int SearchLine;
+	char *TextStr;
+	
+	void __fastcall ReadText(AnsiString file);
 	void __fastcall UpdateText(void);
-	TStringList *__fastcall TextFilter(TStringList *text);
 public:
 	int Option;
 	static TColor Color1,Color2;

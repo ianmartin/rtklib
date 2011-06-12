@@ -54,33 +54,43 @@ static void dumpsta(sta_t *sta)
     printf("del     = %.3f %.3f %.3f\n",sta->del[0],sta->del[1],sta->del[2]);
     printf("hgt     = %.3f\n",sta->hgt);
 }
-/* readrnx() */
+/* readrnx(), sortobs(), uniqnav()  */
 void utest1(void)
 {
     char file1[]="abc.00o";
     char file2[]="bcd.00n";
-    char file3[]="../data/07590920.05o";
-    char file4[]="../data/07590920.05n";
-    char file5[]="../data/30400920.05o";
-    char file6[]="../data/30400920.05n";
+    char file3[]="../data/rinex/07590920.05o";
+    char file4[]="../data/rinex/07590920.05n";
+    char file5[]="../data/rinex/30400920.05o";
+    char file6[]="../data/rinex/30400920.05n";
     obs_t obs={0};
     nav_t nav={0};
     sta_t sta={""};
+    int n,stat;
     
-    readrnx(file1,1,&obs,&nav,&sta);
-        assert(obs.n==0&&nav.n==0&&nav.ng==0&&nav.ns==0);
-    readrnx(file2,1,&obs,&nav,&sta);
-    readrnx(file3,1,&obs,&nav,&sta);
-    readrnx(file4,1,&obs,&nav,&sta);
-    readrnx(file5,2,&obs,&nav,&sta);
-    readrnx(file6,2,&obs,&nav,&sta);
+    stat=readrnx(file1,1,&obs,&nav,&sta);
+        assert(stat==0&&obs.n==0&&nav.n==0&&nav.ng==0&&nav.ns==0);
+    stat=readrnx(file2,1,&obs,&nav,&sta);
+        assert(stat==0&&obs.n==0&&nav.n==0&&nav.ng==0&&nav.ns==0);
+    stat=readrnx(file3,1,&obs,&nav,&sta);
+        assert(stat==1);
+    stat=readrnx(file4,1,&obs,&nav,&sta);
+        assert(stat==1);
+    stat=readrnx(file5,2,&obs,&nav,&sta);
+        assert(stat==1);
+    stat=readrnx(file6,2,&obs,&nav,&sta);
+        assert(stat==1);
+    n=sortobs(&obs);
+        assert(n==171);
+    uniqnav(&nav);
+        assert(nav.n==167);
     dumpobs(&obs); dumpnav(&nav); dumpsta(&sta);
         assert(obs.data&&obs.n>0&&nav.eph&&nav.n>0);
     free(obs.data);
     free(nav.eph);
     free(nav.geph);
     free(nav.seph);
-
+    
     printf("%s utest1 : OK\n",__FILE__);
 }
 /* readrnxt() */
@@ -88,8 +98,8 @@ void utest2(void)
 {
     gtime_t t0={0},ts,te;
     double ep1[]={2005,4,2,1,0,0},ep2[]={2005,4,2,2,0,0};
-    char file1[]="../data/07590920.05o";
-    char file2[]="../data/07590920.05n";
+    char file1[]="../data/rinex/07590920.05o";
+    char file2[]="../data/rinex/07590920.05n";
     int n;
     obs_t obs={0};
     nav_t nav={0};
@@ -106,12 +116,13 @@ void utest2(void)
     printf("\n\nn=%d\n",n);
     dumpobs(&obs);
     free(obs.data);
-
+    
     printf("%s utset2 : OK\n",__FILE__);
 }
 static rnxopt_t opt1={{0}};
 static rnxopt_t opt2= {
-    {0},{0},0.0,2,SYS_ALL,OBSTYPE_ALL,FREQTYPE_ALL,
+    {0},{0},0.0,0.0,2.10,SYS_ALL,OBSTYPE_ALL,FREQTYPE_ALL,
+    "STAID",
     "RROG567890123456789012345678901",
     "RUNBY67890123456789012345678901",
     "MARKER789012345678901234567890123456789012345678901234567890123",
@@ -146,7 +157,7 @@ void utest3(void)
 /* outrneobsb() */
 void utest4(void)
 {
-    char file[]="../data/07590920.05o";
+    char file[]="../data/rinex/07590920.05o";
     obs_t obs={0};
     int i,j;
     
@@ -163,7 +174,7 @@ void utest4(void)
 /* outrnxnavh() */
 void utest5(void)
 {
-    char file1[]="../data/07590920.05n";
+    char file1[]="../data/rinex/07590920.05n";
     double ion[]={1E9,2E-4,3E8,4E3,-4E-3,-5E99,-6E-33,-9E-123};
     double utc[]={1E9,2E4,3E2,-9999};
     nav_t nav={0};
@@ -182,7 +193,7 @@ void utest5(void)
 /* outrnxnavb() */
 void utest6(void)
 {
-    char file[]="../data/07590920.05n";
+    char file[]="../data/rinex/07590920.05n";
     nav_t nav={0};
     int i;
     readrnx(file,1,NULL,&nav,NULL);

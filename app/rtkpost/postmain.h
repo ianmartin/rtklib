@@ -9,8 +9,10 @@
 #include <ExtCtrls.hpp>
 #include <Dialogs.hpp>
 #include <ComCtrls.hpp>
-#include <vcl\inifiles.hpp>
 #include <Buttons.hpp>
+#include <FileCtrl.hpp>
+#include <vcl\inifiles.hpp>
+
 #include "rtklib.h"
 //---------------------------------------------------------------------------
 class TMainForm : public TForm
@@ -45,9 +47,8 @@ __published:
 	TSpeedButton *BtnInputView2;
 	TSpeedButton *BtnInputView4;
 	TSpeedButton *BtnInputView5;
-	TSpeedButton *BtnOutputView1;
-	TSpeedButton *BtnOutputView2;
 	TSpeedButton *BtnAbout;
+	TSpeedButton *BtnKeyword;
 	
 	TCheckBox *TimeStart;
 	TCheckBox *TimeEnd;
@@ -81,6 +82,12 @@ __published:
 	TLabel *LabelInputFile3;
 	TLabel *LabelTimeInt;
 	TLabel *LabelTimeUnit;
+	TEdit *OutDir;
+	TCheckBox *OutDirEna;
+	TButton *BtnOutDir;
+	TSpeedButton *BtnOutputView2;
+	TSpeedButton *BtnOutputView1;
+	TLabel *LabelOutDir;
 	
 	void __fastcall FormCreate         (TObject *Sender);
 	void __fastcall FormShow           (TObject *Sender);
@@ -112,7 +119,7 @@ __published:
 	void __fastcall BtnOutputView2Click(TObject *Sender);
 	void __fastcall BtnInputPlot1Click (TObject *Sender);
 	void __fastcall BtnInputPlot2Click (TObject *Sender);
-	void __fastcall RefPosClick        (TObject *Sender);
+	void __fastcall BtnKeywordClick    (TObject *Sender);
 	
 	void __fastcall TimeStartClick     (TObject *Sender);
 	void __fastcall TimeIntFClick      (TObject *Sender);
@@ -127,9 +134,9 @@ __published:
           short NewValue, TUpDownDirection Direction);
 	
 	void __fastcall InputFile1Change   (TObject *Sender);
-	void __fastcall PosModeChange      (TObject *Sender);
-	void __fastcall SolutionChange     (TObject *Sender);
-	void __fastcall SolFormatChange    (TObject *Sender);
+	void __fastcall OutDirEnaClick(TObject *Sender);
+	void __fastcall BtnOutDirClick(TObject *Sender);
+	void __fastcall OutDirChange(TObject *Sender);
 
 private:
 	void __fastcall DropFiles          (TWMDropFiles msg); // for files drop
@@ -139,7 +146,6 @@ private:
 	int  __fastcall GetOption(prcopt_t &prcopt, solopt_t &solopt, filopt_t &filopt);
 	
 	int  __fastcall ObsToNav (const char *obsfile, char *navfile);
-	int  __fastcall ObsToGnav(const char *obsfile, char *gnavfile);
 	
 	AnsiString __fastcall FilePath(AnsiString file);
 	TStringList * __fastcall ReadList(TIniFile *ini, AnsiString cat,
@@ -149,10 +155,11 @@ private:
 	void __fastcall AddHist  (TComboBox *combo);
 	int __fastcall ExecCmd(AnsiString cmd, int show);
 	
-	gtime_t _fastcall GetTime1(void);
-	gtime_t _fastcall GetTime2(void);
-	void _fastcall SetTime1(gtime_t time);
-	void _fastcall SetTime2(gtime_t time);
+	gtime_t __fastcall GetTime1(void);
+	gtime_t __fastcall GetTime2(void);
+	void __fastcall SetOutFile(void);
+	void __fastcall SetTime1(gtime_t time);
+	void __fastcall SetTime2(gtime_t time);
 	void __fastcall UpdateEnable(void);
 	void __fastcall LoadOpt(void);
 	void __fastcall SaveOpt(void);
@@ -161,6 +168,8 @@ private:
 	MESSAGE_HANDLER(WM_DROPFILES,TWMDropFiles,DropFiles);
 	END_MESSAGE_MAP(TForm);
 public:
+	AnsiString IniFile;
+	
 	// options
 	int PosMode,Freq,Solution,DynamicModel,IonoOpt,TropOpt,RcvBiasEst;
 	int NumIter,CodeSmooth,TideCorr;
@@ -170,17 +179,17 @@ public:
 	int OutputHeight,OutputGeoid,DebugTrace,DebugStatus,BaseLineConst;
 	int SolFormat,TimeFormat,LatLonFormat,IntpRefObs,NetRSCorr,SatClkCorr;
 	int SbasCorr,SbasCorr1,SbasCorr2,SbasCorr3,SbasCorr4,TimeDecimal;
-	int SolStatic;
-	double ElMask,SnrMask,MaxAgeDiff,RejectThres;
-	double MeasErr1,MeasErr2,MeasErr3,MeasErr4,MeasErr5;
+	int SolStatic,SbasSat;
+	double ElMask,SnrMask,MaxAgeDiff,RejectThres,RejectGdop;
+	double MeasErrR1,MeasErrR2,MeasErr2,MeasErr3,MeasErr4,MeasErr5;
 	double SatClkStab,RovAntE,RovAntN,RovAntU,RefAntE,RefAntN,RefAntU;
 	double PrNoise1,PrNoise2,PrNoise3,PrNoise4,PrNoise5;
-	double ValidThresAR,ElMaskAR,SlipThres;
+	double ValidThresAR,ElMaskAR,ElMaskHold,SlipThres;
 	double RovPos[3],RefPos[3],BaseLine[2];
 	
 	AnsiString FieldSep,RovAnt,RefAnt,AntPcvFile,StaPosFile,PrecEphFile;
 	AnsiString NetRSCorrFile1,NetRSCorrFile2,SatClkCorrFile,GoogleEarthFile;
-	AnsiString GeoidDataFile,DCBFile;
+	AnsiString GeoidDataFile,IonoFile,DCBFile;
 	AnsiString SbasCorrFile,SatPcvFile,ExSats;
 	AnsiString RovList,BaseList;
 	

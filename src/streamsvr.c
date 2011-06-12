@@ -1,12 +1,13 @@
 /*------------------------------------------------------------------------------
 * streamsvr.c : stream server functions
 *
-*          Copyright (C) 2010 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2010-2011 by T.TAKASU, All rights reserved.
 *
 * options : -DWIN32    use WIN32 API
 *
 * version : $Revision:$ $Date:$
 * history : 2010/07/18 1.0  moved from stream.c
+*           2011/01/18 1.1  change api strsvrstart()
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -90,6 +91,7 @@ extern void strsvrinit(strsvr_t *svr, int nout)
 *              opts[3]= receive/send buffer size (bytes);
 *              opts[4]= server cycle (ms)
 *              opts[5]= nmea request cycle (ms) (0:no)
+*              opts[6]= file swap margin (s)
 *          int    *strs     I   stream types (STR_???)
 *              strs[0]= input stream
 *              strs[1]= output stream
@@ -102,7 +104,7 @@ extern void strsvrinit(strsvr_t *svr, int nout)
 extern int strsvrstart(strsvr_t *svr, int *opts, int *strs, char **paths,
                        const char *cmd, const double *nmeapos)
 {
-    int i,rw;
+    int i,rw,stropt[5]={0};
     char file1[MAXSTRPATH],file2[MAXSTRPATH],*p;
     
     tracet(3,"strsvrstart:\n");
@@ -110,7 +112,10 @@ extern int strsvrstart(strsvr_t *svr, int *opts, int *strs, char **paths,
     if (svr->state) return 0;
     
     strinitcom();
-    strsetopt(opts);
+    
+    for (i=0;i<4;i++) stropt[i]=opts[i];
+    stropt[4]=opts[6];
+    strsetopt(stropt);
     svr->cycle=opts[4];
     svr->buffsize=opts[3]<4096?4096:opts[3]; /* >=4096byte */
     svr->nmeacycle=0<opts[5]&&opts[5]<1000?1000:opts[5]; /* >=1s */

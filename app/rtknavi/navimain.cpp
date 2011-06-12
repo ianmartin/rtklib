@@ -1,13 +1,19 @@
 //---------------------------------------------------------------------------
 // rtknavi : real-time positioning ap
 //
-//          Copyright (C) 2007-2010 by T.TAKASU, All rights reserved.
+//          Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
+//
+// options : rtknavi [-t title][-i file]
+//
+//           -t title   window title
+//           -i file    ini file path
 //
 // version : $Revision:$ $Date:$
 // history : 2008/07/14  1.0 new
 //           2010/07/18  1.1 rtklib 2.4.0
 //           2010/08/16  1.2 fix bug on setting of satellite antenna model
 //           2010/09/04  1.3 fix bug on setting of receiver antenna delta
+//           2011/06/10  1.4 rtklib 2.4.1
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #include <vcl\inifiles.hpp>
@@ -27,6 +33,7 @@
 #include "viewer.h"
 #include "naviopt.h"
 #include "navimain.h"
+
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -47,6 +54,7 @@ TMainForm *MainForm;
 #define KEYF10      0x79                // code of function key F10
 #define POSFONTNAME "Palatino Linotype"
 #define POSFONTSIZE 12
+#define MINBLLEN    0.01                // minimum baseline length to show
 
 #define KACYCLE     1000                // keep alive cycle (ms)
 #define TIMEOUT     10000               // inactive timeout time (ms)
@@ -60,11 +68,11 @@ TMainForm *MainForm;
 rtksvr_t rtksvr;                        // rtk server struct
 stream_t monistr;                       // monitor stream
 
-//---------------------------------------------------------------------------
+// show message in message area ---------------------------------------------
 extern "C" {
 extern int showmsg(char *format,...) {return 0;}
 }
-//---------------------------------------------------------------------------
+// convert degree to deg-min-sec --------------------------------------------
 static void degtodms(double deg, double *dms)
 {
     double sgn=1.0;
@@ -74,7 +82,7 @@ static void degtodms(double deg, double *dms)
     dms[2]=(deg-dms[0]-dms[1]/60.0)*3600;
     dms[0]*=sgn;
 }
-//---------------------------------------------------------------------------
+// convert deg-min-sec to degree --------------------------------------------
 int __fastcall TMainForm::ExecCmd(AnsiString cmd, int show)
 {
     PROCESS_INFORMATION info;
@@ -87,7 +95,7 @@ int __fastcall TMainForm::ExecCmd(AnsiString cmd, int show)
     CloseHandle(info.hThread);
     return 1;
 }
-//---------------------------------------------------------------------------
+// constructor --------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
     : TForm(Owner)
 {
@@ -105,8 +113,9 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     SolCurrentStat=0;
     SolRov=SolRef=Qr=VelRov=Age=Ratio=NULL;
     for (int i=0;i<2;i++) for (int j=0;j<MAXSAT;j++) {
-        Sat[i][j]=Snr1[i][j]=Snr2[i][j]=Vsat[i][j]=0;
+        Sat[i][j]=Vsat[i][j]=0;
         Az[i][j]=El[i][j]=0.0;
+        for (int k=0;k<NFREQ;k++) Snr[i][j][k]=0;
     }
     PrcOpt=prcopt_default;
     SolOpt=solopt_default;
@@ -119,30 +128,65 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     Caption=Caption+" ver."+VER_RTKLIB;
     DoubleBuffered=true;
 }
-//---------------------------------------------------------------------------
+// callback on form create --------------------------------------------------
 void __fastcall TMainForm::FormCreate(TObject *Sender)
 {
-    LoadOpt();
-    LoadNav(&rtksvr.nav);
+    char *p,*argv[32],buff[1024];
+    int argc=0;
+    
+    trace(3,"FormCreate\n");
+    
+    IniFile="rtknavi.ini";
+    
     InitSolBuff();
     SetTrayIcon(1);
-    
     strinitcom();
+    
+    strcpy(buff,GetCommandLine());
+    
+    for (p=buff;*p&&argc<32;p++) {
+        if (*p==' ') continue;
+        if (*p=='"') {
+            argv[argc++]=p+1;
+            if (!(p=strchr(p+1,'"'))) break;
+        }
+        else {
+            argv[argc++]=p;
+            if (!(p=strchr(p+1,' '))) break;
+        }
+        *p='\0';
+    }
+    for (int i=1;i<argc;i++) {
+        if (!strcmp(argv[i],"-i")&&i+1<argc) IniFile=argv[++i];
+    }
+    LoadOpt();
+    
+    for (int i=1;i<argc;i++) {
+        if (!strcmp(argv[i],"-t")&&i+1<argc) Caption=argv[++i];
+    }
+    LoadNav(&rtksvr.nav);
     
     OpenMoniPort(MoniPort);
 }
-//---------------------------------------------------------------------------
+// callback on form show ----------------------------------------------------
 void __fastcall TMainForm::FormShow(TObject *Sender)
 {
+    trace(3,"FormShow\n");
+    
+    Panel21->Visible=PlotType<=4;
+    IndQ->Visible=!Panel21->Visible;
+    BtnSolType2->Visible=!Panel21->Visible;
     UpdateTimeSys();
     UpdateSolType();
     UpdateFont();
     UpdatePos();
     UpdatePlot();
 }
-//---------------------------------------------------------------------------
+// callback on form close ---------------------------------------------------
 void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
+    trace(3,"FormClose\n");
+    
     if (OpenPort>0) {
         // send disconnect message
         strwrite(&monistr,(unsigned char *)MSG_DISCONN,strlen(MSG_DISCONN));
@@ -152,25 +196,44 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
     SaveOpt();
     SaveNav(&rtksvr.nav);
 }
-//---------------------------------------------------------------------------
+// callback panel 22 resize -------------------------------------------------
+void __fastcall TMainForm::Panel22Resize(TObject *Sender)
+{
+    trace(3,"Panel22Resize\n");
+    
+    PlotWidth =Panel22->Width -2;
+    PlotHeight=Panel22->Height-2;
+    BtnPlotType->Left=Panel22->Width-BtnPlotType->Width-2;
+    BtnFreqType->Left=BtnPlotType->Left-BtnFreqType->Width;
+    BtnSolType2->Left=BtnFreqType->Left-BtnFreqType->Width;
+}
+// callback on button-exit --------------------------------------------------
 void __fastcall TMainForm::BtnExitClick(TObject *Sender)
 {
+    trace(3,"BtnExitClick\n");
+    
     Close();
 }
-//---------------------------------------------------------------------------
+// callback on button-start -------------------------------------------------
 void __fastcall TMainForm::BtnStartClick(TObject *Sender)
 {
+    trace(3,"BtnStartClick\n");
+    
     SvrStart();
 }
-//---------------------------------------------------------------------------
+// callback on button-stopp -------------------------------------------------
 void __fastcall TMainForm::BtnStopClick(TObject *Sender)
 {
+    trace(3,"BtnStopClick\n");
+    
     SvrStop();
 }
-//---------------------------------------------------------------------------
+// callback on button-plot --------------------------------------------------
 void __fastcall TMainForm::BtnPlotClick(TObject *Sender)
 {
     AnsiString cmd;
+    
+    trace(3,"BtnPlotClick\n");
     
     if (OpenPort<=0) {
         ShowMessage("monitor port not open");
@@ -182,10 +245,12 @@ void __fastcall TMainForm::BtnPlotClick(TObject *Sender)
         ShowMessage("error : rtkplot execution");
     }
 }
-//---------------------------------------------------------------------------
+// callback on button-options -----------------------------------------------
 void __fastcall TMainForm::BtnOptClick(TObject *Sender)
 {
     int i,chgmoni=0;
+    
+    trace(3,"BtnOptClick\n");
     
     OptDialog->PrcOpt     =PrcOpt;
     OptDialog->SolOpt     =SolOpt;
@@ -213,14 +278,15 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     OptDialog->TimeoutTime=TimeoutTime;
     OptDialog->ReconTime  =ReconTime;
     OptDialog->NmeaCycle  =NmeaCycle;
+    OptDialog->FileSwapMargin=FileSwapMargin;
     OptDialog->SvrBuffSize=SvrBuffSize;
     OptDialog->SolBuffSize=SolBuffSize;
     OptDialog->SavedSol   =SavedSol;
     OptDialog->NavSelect  =NavSelect;
-    OptDialog->SbasSat    =SbasSat;
     OptDialog->DgpsCorr   =DgpsCorr;
     OptDialog->SbasCorr   =SbasCorr;
     OptDialog->ExSats     =ExSats;
+    OptDialog->ProxyAddr  =ProxyAddr;
     OptDialog->MoniPort   =MoniPort;
     
     for (i=0;i<3;i++) {
@@ -259,13 +325,14 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     TimeoutTime=OptDialog->TimeoutTime;
     ReconTime  =OptDialog->ReconTime;
     NmeaCycle  =OptDialog->NmeaCycle;
+    FileSwapMargin=OptDialog->FileSwapMargin;
     SvrBuffSize=OptDialog->SvrBuffSize;
     SavedSol   =OptDialog->SavedSol;
     NavSelect  =OptDialog->NavSelect;
-    SbasSat    =OptDialog->SbasSat;
     DgpsCorr   =OptDialog->DgpsCorr;
     SbasCorr   =OptDialog->SbasCorr;
     ExSats     =OptDialog->ExSats;
+    ProxyAddr  =OptDialog->ProxyAddr;
     if (MoniPort!=OptDialog->MoniPort) chgmoni=1;
     MoniPort   =OptDialog->MoniPort;
     
@@ -297,15 +364,18 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     // reopen monitor stream
     OpenMoniPort(MoniPort);
 }
-//---------------------------------------------------------------------------
+// callback on button-input-streams -----------------------------------------
 void __fastcall TMainForm::BtnInputStrClick(TObject *Sender)
 {
     int i,j;
+    
+    trace(3,"BtnInputStrClick\n");
     
     for (i=0;i<3;i++) {
         InputStrDialog->StreamC[i]=StreamC[i];
         InputStrDialog->Stream [i]=Stream [i];
         InputStrDialog->Format [i]=Format [i];
+        InputStrDialog->RcvOpt [i]=RcvOpt [i];
         
         /* Paths[0]:serial,[1]:tcp,[2]:file,[3]:ftp */
         for (j=0;j<4;j++) InputStrDialog->Paths[i][j]=Paths[i][j];
@@ -331,6 +401,7 @@ void __fastcall TMainForm::BtnInputStrClick(TObject *Sender)
         StreamC[i]=InputStrDialog->StreamC[i];
         Stream [i]=InputStrDialog->Stream[i];
         Format [i]=InputStrDialog->Format[i];
+        RcvOpt [i]=InputStrDialog->RcvOpt[i];
         for (j=0;j<4;j++) Paths[i][j]=InputStrDialog->Paths[i][j];
     }
     for (i=0;i<3;i++) for (j=0;j<2;j++) {
@@ -348,13 +419,16 @@ void __fastcall TMainForm::BtnInputStrClick(TObject *Sender)
     NmeaPos[0] =InputStrDialog->NmeaPos[0];
     NmeaPos[1] =InputStrDialog->NmeaPos[1];
 }
-//---------------------------------------------------------------------------
+// confirm overwrite --------------------------------------------------------
 int __fastcall TMainForm::ConfOverwrite(const char *path)
 {
     AnsiString s;
     FILE *fp;
+    int itype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_FILE,STR_FTP,STR_HTTP};
     int i;
     char buff1[1024],buff2[1024],*p;
+    
+    trace(3,"ConfOverwrite\n");
     
     strcpy(buff1,path);
     
@@ -363,9 +437,9 @@ int __fastcall TMainForm::ConfOverwrite(const char *path)
     if (!(fp=fopen(buff1,"r"))) return 1; // file not exists
     fclose(fp);
     
-    // check overwrite input file
-    for (i=0;i<2;i++) {
-        if (!StreamC[i]||Stream[i]!=STR_FILE) continue;
+    // check overwrite input files
+    for (i=0;i<3;i++) {
+        if (!StreamC[i]||itype[Stream[i]]!=STR_FILE) continue;
         
         strcpy(buff2,Paths[i][2].c_str());
         if ((p=strstr(buff2,"::"))) *p='\0';
@@ -379,12 +453,14 @@ int __fastcall TMainForm::ConfOverwrite(const char *path)
     
     return ConfDialog->ShowModal()==mrOk;
 }
-//---------------------------------------------------------------------------
+// callback on button-output-streams ----------------------------------------
 void __fastcall TMainForm::BtnOutputStrClick(TObject *Sender)
 {
     int otype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_FILE};
     int i,j,str,update[2]={0};
     char *path;
+    
+    trace(3,"BtnOutputStrClick\n");
     
     for (i=3;i<5;i++) {
         OutputStrDialog->StreamC[i-3]=StreamC[i];
@@ -437,18 +513,22 @@ void __fastcall TMainForm::BtnOutputStrClick(TObject *Sender)
         else if (str==STR_FILE  )             path=Paths[i][2].c_str();
         else if (str==STR_FTP||str==STR_HTTP) path=Paths[i][3].c_str();
         else                                  path=Paths[i][1].c_str();
-        if (str==STR_FILE&&!ConfOverwrite(path)) continue;
-        
+        if (str==STR_FILE&&!ConfOverwrite(path)) {
+            StreamC[i]=0;
+            continue;
+        }
         SolOpt.posf=Format[i];
         rtksvropenstr(&rtksvr,i,str,path,&SolOpt);
     }
 }
-//---------------------------------------------------------------------------
+// callback on button-log-streams -------------------------------------------
 void __fastcall TMainForm::BtnLogStrClick(TObject *Sender)
 {
     int otype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_FILE};
     int i,j,str,update[3]={0};
     char *path;
+    
+    trace(3,"BtnLogStrClick\n");
     
     for (i=5;i<8;i++) {
         LogStrDialog->StreamC[i-5]=StreamC[i];
@@ -498,106 +578,153 @@ void __fastcall TMainForm::BtnLogStrClick(TObject *Sender)
         else if (str==STR_FILE  )             path=Paths[i][2].c_str();
         else if (str==STR_FTP||str==STR_HTTP) path=Paths[i][3].c_str();
         else                                  path=Paths[i][1].c_str();
-        if (str==STR_FILE&&!ConfOverwrite(path)) continue;
-        
+        if (str==STR_FILE&&!ConfOverwrite(path)) {
+            StreamC[i]=0;
+            continue;
+        }
         rtksvropenstr(&rtksvr,i,str,path,&SolOpt);
     }
 }
-//---------------------------------------------------------------------------
+// callback on button-time-system -------------------------------------------
 void __fastcall TMainForm::BtnTimeSysClick(TObject *Sender)
 {
+    trace(3,"BtnTimeSysClick\n");
+    
     if (++TimeSys>3) TimeSys=0;
     UpdateTimeSys();
 }
-//---------------------------------------------------------------------------
+// callback on button-solution-type -----------------------------------------
 void __fastcall TMainForm::BtnSolTypeClick(TObject *Sender)
 {
+    trace(3,"BtnSolTypeClick\n");
+    
     if (++SolType>4) SolType=0;
     UpdateSolType();
 }
-//---------------------------------------------------------------------------
+// callback on button frequency-type ----------------------------------------
+void __fastcall TMainForm::BtnFreqTypeClick(TObject *Sender)
+{
+    trace(3,"BtnFreqTypeClick\n");
+    
+    if (++FreqType>NFREQ) FreqType=0;
+    UpdateSolType();
+}
+// callback on button-plottype ----------------------------------------------
 void __fastcall TMainForm::BtnPlotTypeClick(TObject *Sender)
 {
+    trace(3,"BtnPlotTypeClick\n");
+    
     ChangePlot();
 }
-//---------------------------------------------------------------------------
+// callback on button-rtk-monitor -------------------------------------------
 void __fastcall TMainForm::BtnMonitorClick(TObject *Sender)
 {
     TMonitorDialog *monitor=new TMonitorDialog(Application);
+    
+    trace(3,"BtnMonitorClick\n");
+    
     monitor->Caption=Caption+": RTK Monitor";
     monitor->Show();
 }
-//---------------------------------------------------------------------------
+// callback on scroll-solution change ---------------------------------------
 void __fastcall TMainForm::ScbSolChange(TObject *Sender)
 {
+    trace(3,"ScbSolChange\n");
+    
     PSol=PSolS+ScbSol->Position;
     if (PSol>=SolBuffSize) PSol-=SolBuffSize;
     UpdateTime();
     UpdatePos();
 }
-//---------------------------------------------------------------------------
+// callback on button-save --------------------------------------------------
 void __fastcall TMainForm::BtnSaveClick(TObject *Sender)
 {
+    trace(3,"BtnSaveClick\n");
+    
     SaveLog();
 }
-//---------------------------------------------------------------------------
+// callback on button-about -------------------------------------------------
 void __fastcall TMainForm::BtnAboutClick(TObject *Sender)
 {
-    AboutDialog->About=PRGNAME;
+    AnsiString prog=PRGNAME;
+    
+    trace(3,"BtnAboutClick\n");
+#ifdef MKL
+    prog+="_MKL";
+#endif
+    AboutDialog->About=prog;
     AboutDialog->IconIndex=5;
     AboutDialog->ShowModal();
 }
-//---------------------------------------------------------------------------
+// callback on button-tasktray ----------------------------------------------
 void __fastcall TMainForm::BtnTaskTrayClick(TObject *Sender)
 {
+    trace(3,"BtnTaskTrayClick\n");
+    
     Visible=false;
     TrayIcon->Hint=Caption;
     TrayIcon->Visible=true;
 }
-//---------------------------------------------------------------------------
+// callback on button-tasktray ----------------------------------------------
 void __fastcall TMainForm::TrayIconDblClick(TObject *Sender)
 {
+    trace(3,"TaskIconDblClick\n");
+    
     Visible=true;
     TrayIcon->Visible=false;
 }
-//---------------------------------------------------------------------------
+// callback on task-tray-icon mouse down with right-button ------------------
 void __fastcall TMainForm::TrayIconMouseDown(TObject *Sender,
       TMouseButton Button, TShiftState Shift, int X, int Y)
 {
-    if (Shift.Contains(ssRight)) PopupMenu->Popup(X,Y); 
+   trace(3,"TaskIconMouseDown\n");
+    
+   if (Shift.Contains(ssRight)) PopupMenu->Popup(X,Y); 
 }
-//---------------------------------------------------------------------------
+// callback on menu-expand --------------------------------------------------
 void __fastcall TMainForm::MenuExpandClick(TObject *Sender)
 {
+    trace(3,"MenuExpandClick\n");
+    
     Visible=true;
     TrayIcon->Visible=false;
 }
-//---------------------------------------------------------------------------
+// callback on menu-start ---------------------------------------------------
 void __fastcall TMainForm::MenuStartClick(TObject *Sender)
 {
+    trace(3,"MenuStartClick\n");
+    
     BtnStartClick(Sender);
 }
-//---------------------------------------------------------------------------
+// callback on menu-stop ----------------------------------------------------
 void __fastcall TMainForm::MenuStopClick(TObject *Sender)
 {
+    trace(3,"MenuStopClick\n");
+    
     BtnStopClick(Sender);
 }
-//---------------------------------------------------------------------------
+// callback on menu-monitor -------------------------------------------------
 void __fastcall TMainForm::MenuMonitorClick(TObject *Sender)
 {
+    trace(3,"MenuMonitorClick\n");
+    
     BtnMonitorClick(Sender);
 }
-//---------------------------------------------------------------------------
+// callback on menu-plot ----------------------------------------------------
 void __fastcall TMainForm::MenuPlotClick(TObject *Sender)
 {
+    trace(3,"MenuPlotClick\n");
+    
     BtnPlotClick(Sender);
 }
-//---------------------------------------------------------------------------
+// callback on menu-exit ----------------------------------------------------
 void __fastcall TMainForm::MenuExitClick(TObject *Sender)
 {
+    trace(3,"MenuExitClick\n");
+    
     BtnExitClick(Sender);
 }
-//---------------------------------------------------------------------------
+// start rtk server ---------------------------------------------------------
 void __fastcall TMainForm::SvrStart(void)
 {
     AnsiString s;
@@ -605,16 +732,28 @@ void __fastcall TMainForm::SvrStart(void)
     double ep[6],pos[3],nmeapos[3];
     int itype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_FILE,STR_FTP,STR_HTTP};
     int otype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_FILE};
-    int i,strs[MAXSTRRTK]={0},sat,stropt[4];
-    char *paths[8],*cmds[3]={0},buff[1024],*p;
+    int i,strs[MAXSTRRTK]={0},sat,ex,stropt[8]={0};
+    char *paths[8],*cmds[3]={0},*rcvopts[3]={0},buff[1024],*p;
     char file[1024],*type;
     FILE *fp;
     gtime_t time=timeget();
     pcvs_t pcvr={0},pcvs={0};
     pcv_t *pcv;
     
+    trace(3,"SvrStart\n");
+    
     Message->Caption="";
     
+    if (RovPosTypeF<=2) {
+        PrcOpt.rovpos=0;
+        PrcOpt.ru[0]=RovPos[0];
+        PrcOpt.ru[1]=RovPos[1];
+        PrcOpt.ru[2]=RovPos[2];
+    }
+    else {
+        PrcOpt.rovpos=4;
+        for (i=0;i<3;i++) PrcOpt.ru[i]=0.0;
+    }
     if (RefPosTypeF<=2) {
         PrcOpt.refpos=0;
         PrcOpt.rb[0]=RefPos[0];
@@ -631,8 +770,9 @@ void __fastcall TMainForm::SvrStart(void)
     if (ExSats!="") { // excluded satellites
         strcpy(buff,ExSats.c_str());
         for (p=strtok(buff," ");p;p=strtok(NULL," ")) {
+            if (*p=='+') {ex=2; p++;} else ex=1;
             if (!(sat=satid2no(p))) continue;
-            PrcOpt.exsats[sat-1]=1;
+            PrcOpt.exsats[sat-1]=ex;
         }
     }
     if ((RovAntPcvF||RefAntPcvF)&&!readpcv(AntPcvFileF.c_str(),&pcvr)) {
@@ -691,6 +831,7 @@ void __fastcall TMainForm::SvrStart(void)
     }
     for (i=0;i<3;i++) {
         if (CmdEna[i][0]) cmds[i]=Cmds[i][0].c_str();
+        rcvopts[i]=RcvOpt[i].c_str();
     }
     NmeaCycle=NmeaCycle<1000?1000:NmeaCycle;
     pos[0]=NmeaPos[0]*D2R;
@@ -699,8 +840,7 @@ void __fastcall TMainForm::SvrStart(void)
     pos2ecef(pos,nmeapos);
     
     strsetdir(LocalDirectory.c_str());
-    
-    PrcOpt.sbascorr=DgpsCorr==1?SbasCorr:0;
+    strsetproxy(ProxyAddr.c_str());
     
     for (i=3;i<8;i++) {
         if (strs[i]==STR_FILE&&!ConfOverwrite(paths[i])) return;
@@ -731,11 +871,12 @@ void __fastcall TMainForm::SvrStart(void)
     stropt[1]=ReconTime;
     stropt[2]=1000;
     stropt[3]=SvrBuffSize;
+    stropt[4]=FileSwapMargin;
     strsetopt(stropt);
     
     // start rtk server
     if (!rtksvrstart(&rtksvr,SvrCycle,SvrBuffSize,strs,paths,Format,NavSelect,
-                     SbasSat,cmds,NmeaCycle,NmeaReq,nmeapos,&PrcOpt,solopt,
+                     cmds,rcvopts,NmeaCycle,NmeaReq,nmeapos,&PrcOpt,solopt,
                      &monistr)) {
         traceclose();
         return;
@@ -760,11 +901,13 @@ void __fastcall TMainForm::SvrStart(void)
     Svr->Color=CLORANGE;
     SetTrayIcon(0);
 }
-//---------------------------------------------------------------------------
+// strop rtk server ---------------------------------------------------------
 void __fastcall TMainForm::SvrStop(void)
 {
     char *cmds[3]={0};
     int i,n,m;
+    
+    trace(3,"SvrStop\n");
     
     for (i=0;i<3;i++) {
         if (CmdEna[i][1]) cmds[i]=Cmds[i][1].c_str();
@@ -796,13 +939,15 @@ void __fastcall TMainForm::SvrStop(void)
     if (DebugStatusF>0) rtkclosestat();
     if (OutputGeoidF>0&&GeoidDataFileF!="") closegeoid();
 }
-//---------------------------------------------------------------------------
+// callback on interval timer -----------------------------------------------
 void __fastcall TMainForm::TimerTimer(TObject *Sender)
 {
     static int n=0,inactive=0;
     sol_t *sol;
     int i,update=0;
     unsigned char buff[8];
+    
+    trace(4,"TimerTimer\n");
     
     rtksvrlock(&rtksvr);
     
@@ -842,37 +987,50 @@ void __fastcall TMainForm::TimerTimer(TObject *Sender)
         strwrite(&monistr,"\r",1);
     }
 }
-//---------------------------------------------------------------------------
+// change plot type ---------------------------------------------------------
 void __fastcall TMainForm::ChangePlot(void)
 {
-    if (++PlotType>4) PlotType=0;
+    trace(3,"ChangePlot\n");
+    
+    if (++PlotType>6) PlotType=0;
+    Panel21->Visible=PlotType<=4;
+    IndQ->Visible=!Panel21->Visible;
+    BtnSolType2->Visible=!Panel21->Visible;
     UpdatePlot();
     UpdatePos();
 }
-//---------------------------------------------------------------------------
+// update time-system -------------------------------------------------------
 void __fastcall TMainForm::UpdateTimeSys(void)
 {
     AnsiString label[]={"GPST","UTC","JST","GPST"};
+    
+    trace(3,"UpdateTimeSys\n");
+    
     BtnTimeSys->Caption=label[TimeSys];
     UpdateTime();
 }
-//---------------------------------------------------------------------------
+// update solution type -----------------------------------------------------
 void __fastcall TMainForm::UpdateSolType(void)
 {
     AnsiString label[]={
         "Lat/Lon/Height","Lat/Lon/Height","X/Y/Z-ECEF","E/N/U-Baseline",
-        "Pitch/Yaw/Length-Baseline"
+        "Pitch/Yaw/Length-Baseline",""
     };
+    trace(3,"UpdateSolType\n");
+    
     Plabel0->Caption=label[SolType];
     UpdatePos();
 }
-//---------------------------------------------------------------------------
+// update log ---------------------------------------------------------------
 void __fastcall TMainForm::UpdateLog(int stat, gtime_t time, double *rr,
     float *qr, double *rb, int ns, double age, double ratio)
 {
     int i,ena;
     
     if (!stat) return;
+    
+    trace(4,"UpdateLog\n");
+    
     SolStat[PSolE]=stat; Time[PSolE]=time; Nvsat[PSolE]=ns; Age[PSolE]=age;
     Ratio[PSolE]=ratio;
     for (i=0;i<3;i++) {
@@ -891,7 +1049,7 @@ void __fastcall TMainForm::UpdateLog(int stat, gtime_t time, double *rr,
     if (++PSolE>=SolBuffSize) PSolE=0;
     if (PSolE==PSolS&&++PSolS>=SolBuffSize) PSolS=0;
 }
-//---------------------------------------------------------------------------
+// update font --------------------------------------------------------------
 void __fastcall TMainForm::UpdateFont(void)
 {
     TLabel *label[]={
@@ -900,18 +1058,22 @@ void __fastcall TMainForm::UpdateFont(void)
     TColor color=label[7]->Font->Color;
     int i;
     
+    trace(4,"UpdateFont\n");
+    
     for (i=0;i<10;i++) label[i]->Font->Assign(PosFont);
     label[0]->Font->Size=9; label[7]->Font->Color=color;
     label[8]->Font->Size=8; label[8]->Font->Color=clGray;
     label[9]->Font->Size=8; label[9]->Font->Color=clGray;
 }
-//---------------------------------------------------------------------------
+// update time --------------------------------------------------------------
 void __fastcall TMainForm::UpdateTime(void)
 {
     gtime_t time=Time[PSol];
     double tow;
     int week;
     char tstr[64];
+    
+    trace(4,"UpdateTime\n");
     
     if      (TimeSys==0) time2str(time,tstr,1);
     else if (TimeSys==1) time2str(gpst2utc(time),tstr,1);
@@ -921,7 +1083,7 @@ void __fastcall TMainForm::UpdateTime(void)
     }
     LabelTime->Caption=tstr;
 }
-//---------------------------------------------------------------------------
+// update solution display --------------------------------------------------
 void __fastcall TMainForm::UpdatePos(void)
 {
     TLabel *label[]={Plabel1,Plabel2,Plabel3,Pos1,Pos2,Pos3,LabelStd,LabelNSat};
@@ -931,6 +1093,8 @@ void __fastcall TMainForm::UpdatePos(void)
     double *rr=SolRov+PSol*3,*rb=SolRef+PSol*3,*qr=Qr+PSol*9,pos[3]={0},Qe[9]={0};
     double dms1[3]={0},dms2[3]={0},bl[3]={0},enu[3]={0},pitch=0.0,yaw=0.0,len;
     int i,stat=SolStat[PSol];
+    
+    trace(4,"UpdatePos\n");
     
     Solution->Caption=sol[stat];
     Solution->Font->Color=rtksvr.state?color[stat]:clGray;
@@ -999,7 +1163,7 @@ void __fastcall TMainForm::UpdatePos(void)
         label[i]->Font->Color=PrcOpt.mode==PMODE_MOVEB&&SolType<=2?clGray:clBlack;
     }
 }
-//---------------------------------------------------------------------------
+// update stream status indicators ------------------------------------------
 void __fastcall TMainForm::UpdateStr(void)
 {
     TColor color[]={clRed,clBtnFace,CLORANGE,clGreen,clLime};
@@ -1007,23 +1171,35 @@ void __fastcall TMainForm::UpdateStr(void)
     int i,sstat[MAXSTRRTK]={0};
     char msg[MAXSTRMSG]="";
     
+    trace(4,"UpdateStr\n");
+    
     rtksvrsstat(&rtksvr,sstat,msg);
     for (i=0;i<MAXSTRRTK;i++) {
         ind[i]->Color=color[sstat[i]+1];
         if (sstat[i]) Message->Caption=msg;
     }
 }
-//---------------------------------------------------------------------------
+// update solution plot -----------------------------------------------------
 void __fastcall TMainForm::UpdatePlot(void)
 {
+    AnsiString s;
     gtime_t time;
     TCanvas *c=Plot->Canvas;
-    int w=Plot->Width,h=Plot->Height;
-    int i,j,sat[2][MAXSAT],ns[2],snr1[2][MAXSAT],snr2[2][MAXSAT],vsat[2][MAXSAT];
+    TLabel *label[]={Plabel1,Plabel2,Plabel3,Pos1,Pos2,Pos3};
+    char *fstr[]={"","L1 ","L2 ","L5 ","L6 ","L7 ","L8 "};
+    int w=PlotWidth,h=PlotHeight;
+    int i,j,sat[2][MAXSAT],ns[2],snr[2][MAXSAT][NFREQ],vsat[2][MAXSAT];
+    int *snr0[MAXSAT],*snr1[MAXSAT];
     double az[2][MAXSAT],el[2][MAXSAT];
     
-    ns[0]=rtksvrostat(&rtksvr,0,&time,sat[0],az[0],el[0],snr1[0],snr2[0],vsat[0]);
-    ns[1]=rtksvrostat(&rtksvr,1,&time,sat[1],az[1],el[1],snr1[1],snr2[1],vsat[1]);
+    trace(4,"UpdatePlot\n");
+    
+    for (i=0;i<MAXSAT;i++) {
+        snr0[i]=snr[0][i];
+        snr1[i]=snr[1][i];
+    }
+    ns[0]=rtksvrostat(&rtksvr,0,&time,sat[0],az[0],el[0],snr0,vsat[0]);
+    ns[1]=rtksvrostat(&rtksvr,1,&time,sat[1],az[1],el[1],snr1,vsat[1]);
      
     for (i=0;i<2;i++) {
         if (ns[i]>0) {
@@ -1032,14 +1208,18 @@ void __fastcall TMainForm::UpdatePlot(void)
                 Sat [i][j]=sat [i][j];
                 Az  [i][j]=az  [i][j];
                 El  [i][j]=el  [i][j];
-                Snr1[i][j]=snr1[i][j];
-                Snr2[i][j]=snr2[i][j];
+                for (int k=0;k<NFREQ;k++) {
+                    Snr[i][j][k]=snr[i][j][k];
+                }
                 Vsat[i][j]=vsat[i][j];
             }
         }
         else {
             for (j=0;j<Nsat[i];j++) {
-                Snr1[i][j]=Snr2[i][j]=Vsat[i][j]=0;
+                Vsat[i][j]=0;
+                for (int k=0;k<NFREQ;k++) {
+                    Snr[i][j][k]=0;
+                }
             }
         }
     }
@@ -1049,97 +1229,135 @@ void __fastcall TMainForm::UpdatePlot(void)
     if (PlotType==0) {
         DrawSnr(c,w,(h-12)/2,15,0);
         DrawSnr(c,w,(h-12)/2,14+(h-12)/2,1);
-        DrawText(c,3,1,"Rover : Base/NRTK SNR (dBHz)",clGray,0);
+        s.sprintf("Rover:Base %sSNR (dBHz)",fstr[FreqType]);
+        DrawText(c,3,1,s,clGray,0);
     }
     else if (PlotType==1) {
         DrawSnr(c,w,h-15,15,0);
-        DrawText(c,3,1,"Rover SNR (dBHz)",clGray,0);
+        s.sprintf("Rover %s SNR (dBHz)",fstr[FreqType]);
+        DrawText(c,3,1,s,clGray,0);
     }
     else if (PlotType==2) {
         DrawSat(c,w,h,0);
-        DrawText(c,3,1,"Rover",clGray,0);
+        s.sprintf("Rover %s",fstr[!FreqType?1:FreqType]);
+        DrawText(c,3,1,s,clGray,0);
     }
     else if (PlotType==3) {
         DrawSat(c,w,h,1);
-        DrawText(c,3,1,"Base/NRTK",clGray,0);
+        s.sprintf("Base %s",fstr[!FreqType?1:FreqType]);
+        DrawText(c,3,1,s,clGray,0);
     }
     else if (PlotType==4) {
         DrawBL(c,w,h);
         DrawText(c,3,1,"Baseline",clGray,0);
     }
-    Disp->Canvas->CopyRect(Plot->ClientRect,c,Plot->ClientRect);
+    else if (PlotType==5) {
+        DrawSnr(c,w,(h-12)/2,15,0);
+        DrawSnr(c,w,(h-12)/2,14+(h-12)/2,1);
+    }
+    else if (PlotType==6) {
+        DrawSnr(c,w,h-15,15,0);
+    }
+    if (PlotType>=5) {
+        IndQ->Color=IndSol->Color;
+        s=label[0]->Caption+" "+label[3]->Caption+" "+
+          label[1]->Caption+" "+label[4]->Caption+" "+
+          label[2]->Caption+" "+label[5]->Caption;
+        DrawText(c,19,1,s,LabelTime->Font->Color,0);
+        s.sprintf("%s",fstr[FreqType]);
+        DrawText(c,6,18,s,clGray,0);
+    }
+    Disp->Canvas->CopyRect(Disp->ClientRect,c,Disp->ClientRect);
 }
-//---------------------------------------------------------------------------
+// draw snr plot ------------------------------------------------------------
 void __fastcall TMainForm::DrawSnr(TCanvas *c, int w, int h, int top, int index)
 {
     TColor color[]={clGreen,CLORANGE,clFuchsia,clBlue,clRed,clGray};
     AnsiString s; 
-    int i,j,snr,y,x1,x2,y1,y2,y3,k1,k2,hh=h-15,ww=w/(Nsat[index]+1);
+    int i,j,k,x1,x2,y1,y2,y3,k1,hh=h-15,ww,www,snr[NFREQ+1];
     char id[16];
     
+    trace(4,"DrawSnr: w=%d h=%d top=%d index=%d\n",w,h,top,index);
+    
     c->Pen->Color=clSilver;
-    for (snr=MINSNR+10;snr<MAXSNR;snr+=10) {
-        y=top+hh-(snr-MINSNR)*hh/(MAXSNR-MINSNR);
-        c->MoveTo(3,y); c->LineTo(w-13,y);
-        DrawText(c,w-9,y,s.sprintf("%d",snr),clGray,1);
+    for (snr[0]=MINSNR+10;snr[0]<MAXSNR;snr[0]+=10) {
+        y1=top+hh-(snr[0]-MINSNR)*hh/(MAXSNR-MINSNR);
+        c->MoveTo(3,y1); c->LineTo(w-13,y1);
+        DrawText(c,w-9,y1,s.sprintf("%d",snr[0]),clGray,1);
     }
+    y1=top+hh;
+    TRect b(1,top,w-2,y1);
     c->Pen->Color=clGray;
     c->Brush->Style=bsClear;
-    
-    TRect b(1,top,w-2,top+hh);
     c->Rectangle(b);
-    for (i=j=0;i<Nsat[index]&&i<MAXSAT;i++) {
-        x1=2+j*ww+2;
-        x2=x1+ww-3;
-        y1=top+hh;
-        y2=y1-2;
-        y3=y1-2;
-        if (Snr1[index][i]>0.0) y2-=(Snr1[index][i]-MINSNR)*hh/(MAXSNR-MINSNR)-2;
-        if (Snr2[index][i]>0.0) y3-=(Snr2[index][i]-MINSNR)*hh/(MAXSNR-MINSNR)-2;
-        k1=(49-Snr1[index][i])/5;
-        k2=(49-Snr2[index][i])/5;
-        y2=y2<2?2:(y1<y2?y1:y2);
-        y3=y3<2?2:(y1<y3?y1:y3);
-        TRect r1(x1,y1,(x1+x2)/2+1,y2),r2((x1+x2)/2,y1,x2,y3);
-        c->Brush->Style=bsSolid;
-        c->Brush->Color=color[k1<0?0:(k1>5?5:k1)];
-        c->FillRect(r1); c->Rectangle(r1);
-        c->Brush->Color=color[k2<0?0:(k2>5?5:k2)];
-        c->FillRect(r2); c->Rectangle(r2);
-        c->Brush->Style=bsClear;
+    
+    for (i=0;i<Nsat[index]&&i<MAXSAT;i++) {
+        
+        ww=(w-16)/Nsat[index];
+        www=ww-2<8?ww-2:8;
+        x1=i*(w-16)/Nsat[index]+ww/2;
+        
+        for (j=snr[0]=0;j<NFREQ;j++) {
+            snr[j+1]=Snr[index][i][j];
+            if ((FreqType&&FreqType==j+1)||(!FreqType&&snr[j+1]>snr[0])) {
+                snr[0]=snr[j+1];
+            }
+        }
+        for (j=0;j<NFREQ+2;j++) {
+            k=j<NFREQ+1?j:0;
+            y3=j<NFREQ+1?0:2;
+            y2=y1-y3;
+            if (snr[k]>0) y2-=(snr[k]-MINSNR)*hh/(MAXSNR-MINSNR)-y3;
+            y2=y2<2?2:(y1<y2?y1:y2);
+            
+            TRect r1(x1,y1,x1+www,y2);
+            if (j==0) {
+                k1=(49-snr[k])/5;
+                c->Brush->Style=bsSolid;
+                c->Brush->Color=color[k1<0?0:(k1>5?5:k1)];
+                if (!Vsat[index][i]) c->Brush->Color=clSilver;
+                c->Rectangle(r1);
+            }
+            else {
+                c->Pen->Color=j<NFREQ+1?clSilver:clGray;
+                c->Brush->Style=bsClear;
+                c->Rectangle(r1);
+            }
+        }
         satno2id(Sat[index][i],id);
-        DrawText(c,x1+ww/2-1,y1+6,(s=id),Vsat[index][i]?clGray:clSilver,1);
-        j++;
+        DrawText(c,x1+www/2,y1+6,(s=id),Vsat[index][i]?clGray:clSilver,1);
     }
 }
-//---------------------------------------------------------------------------
+// draw satellites in skyplot -----------------------------------------------
 void __fastcall TMainForm::DrawSat(TCanvas *c, int w, int h, int index)
 {
     TColor color[]={clGreen,CLORANGE,clFuchsia,clBlue,clRed,clGray};
     AnsiString s;
     TPoint p(w/2,h/2);
     double r=w*0.85/2,azel[MAXSAT*2],dop[4];
-    int i,j,d,x[MAXSAT],y[MAXSAT],ns=0;
+    int i,j,k,d,x[MAXSAT],y[MAXSAT],ns=0,f=!FreqType?0:FreqType-1;
     char id[16];
+    
+    trace(4,"DrawSat: w=%d h=%d index=%d\n",w,h,index);
     
     DrawSky(c,w,h);
     
-    for (i=0;i<Nsat[index]&&i<MAXSAT;i++) {
-        if (El[index][i]<=0.0) continue;
-        if (Vsat[index][i]) {
-            azel[ns*2]=Az[index][i]; azel[1+ns*2]=El[index][i];
+    for (i=0,k=Nsat[index]-1;i<Nsat[index]&&i<MAXSAT;i++,k--) {
+        if (El[index][k]<=0.0) continue;
+        if (Vsat[index][k]) {
+            azel[ns*2]=Az[index][k]; azel[1+ns*2]=El[index][k];
             ns++;
         }
-        x[i]=(int)(p.x+r*(90-El[index][i]*R2D)/90*sin(Az[index][i]));
-        y[i]=(int)(p.y-r*(90-El[index][i]*R2D)/90*cos(Az[index][i]));
+        x[i]=(int)(p.x+r*(90-El[index][k]*R2D)/90*sin(Az[index][k]));
+        y[i]=(int)(p.y-r*(90-El[index][k]*R2D)/90*cos(Az[index][k]));
         c->Pen->Color=clGray;
         c->Brush->Style=bsSolid;
-        j=(49-Snr1[index][i])/5;
+        j=(49-Snr[index][k][f])/5;
         d=SATSIZE/2;
-        c->Brush->Color=Vsat[index][i]?color[j<0?0:(j>5?5:j)]:clSilver;
+        c->Brush->Color=Vsat[index][k]?color[j<0?0:(j>5?5:j)]:clSilver;
         c->Ellipse(x[i]-d,y[i]-d,x[i]+d+1,y[i]+d+1);
         c->Brush->Style=bsClear;
-        satno2id(Sat[index][i],id);
+        satno2id(Sat[index][k],id);
         DrawText(c,x[i],y[i],(s=id),clWhite,1);
     }
     c->Brush->Style=bsClear;
@@ -1147,7 +1365,7 @@ void __fastcall TMainForm::DrawSat(TCanvas *c, int w, int h, int index)
     DrawText(c,3,h-15,s.sprintf("# of Sat:%2d",Nsat[index]),clGray,0);
     DrawText(c,w-3,h-15,s.sprintf("GDOP:%.1f",dop[0]),clGray,2);
 }
-//---------------------------------------------------------------------------
+// draw baseline plot -------------------------------------------------------
 void __fastcall TMainForm::DrawBL(TCanvas *c, int w, int h)
 {
     TColor color[]={clSilver,clGreen,CLORANGE,clFuchsia,clBlue,clRed,clTeal};
@@ -1158,7 +1376,9 @@ void __fastcall TMainForm::DrawBL(TCanvas *c, int w, int h)
     double bl[3]={0},pos[3],enu[3],len=0.0,pitch=0.0,yaw=0.0;
     double cp,q;
     TColor col=clWhite;
-    int i,d1=9,d2=16,d3=10,cy,sy,cya,sya,a,x1,x2,y1,y2;
+    int i,d1=9,d2=16,d3=10,cy=0,sy=0,cya=0,sya=0,a,x1,x2,y1,y2,digit;
+    
+    trace(4,"DrawBL: w=%d h=%d\n",w,h);
     
     if (PMODE_DGPS<=PrcOpt.mode&&PrcOpt.mode<=PMODE_FIXED) {
         col=rtksvr.state&&SolStat[PSol]&SolCurrentStat?color[SolStat[PSol]]:clWhite;
@@ -1172,11 +1392,13 @@ void __fastcall TMainForm::DrawBL(TCanvas *c, int w, int h)
             yaw=atan2(enu[0],enu[1]); if (yaw<0.0) yaw+=2.0*PI;
         }
     }
-    cp =cos(pitch);
-    cy =(int)((r-d1-d2/2)*cp*cos(yaw));
-    sy =(int)((r-d1-d2/2)*cp*sin(yaw));
-    cya=(int)(((r-d1-d2/2)*cp-d2/2-4)*cos(yaw));
-    sya=(int)(((r-d1-d2/2)*cp-d2/2-4)*sin(yaw));
+    if (len>=MINBLLEN) {
+        cp =cos(pitch);
+        cy =(int)((r-d1-d2/2)*cp*cos(yaw));
+        sy =(int)((r-d1-d2/2)*cp*sin(yaw));
+        cya=(int)(((r-d1-d2/2)*cp-d2/2-4)*cos(yaw));
+        sya=(int)(((r-d1-d2/2)*cp-d2/2-4)*sin(yaw));
+    }
     p1.x=p.x-sy; p1.y=p.y+cy; // base
     p2.x=p.x+sy; p2.y=p.y-cy; // rover
     
@@ -1218,11 +1440,12 @@ void __fastcall TMainForm::DrawBL(TCanvas *c, int w, int h)
     c->Brush->Color=col;
     c->Ellipse(pp.x-d2/2+2,pp.y-d2/2+2,pp.x+d2/2-1,pp.y+d2/2-1);
     c->Brush->Color=clWhite;
-    DrawText(c,p.x,p.y ,s.sprintf("%.2f m",len),clGray,1);
+    digit=len<10.0?3:(len<100.0?2:(len<1000.0?1:0));
+    DrawText(c,p.x,p.y ,s.sprintf("%.*f m",digit,len),clGray,1);
     DrawText(c,3,  h-15,s.sprintf("Y: %.1f%s",yaw*R2D,CHARDEG),clGray,0);
     DrawText(c,w-3,h-15,s.sprintf("P: %.1f%s",pitch*R2D,CHARDEG),clGray,2);
 }
-//---------------------------------------------------------------------------
+// draw skyplot -------------------------------------------------------------
 void __fastcall TMainForm::DrawSky(TCanvas *c, int w, int h)
 {
     TPoint p(w/2,h/2);
@@ -1245,7 +1468,7 @@ void __fastcall TMainForm::DrawSky(TCanvas *c, int w, int h)
         if (a%90==0) DrawText(c,p.x+x,p.y-y,label[a/90],clGray,1);
     }
 }
-//---------------------------------------------------------------------------
+// draw text ----------------------------------------------------------------
 void __fastcall TMainForm::DrawText(TCanvas *c, int x, int y, AnsiString s,
     TColor color, int align)
 {
@@ -1255,7 +1478,7 @@ void __fastcall TMainForm::DrawText(TCanvas *c, int x, int y, AnsiString s,
     c->Font->Color=color;
     c->TextOut(x,y,s);
 }
-//---------------------------------------------------------------------------
+// draw arrow ---------------------------------------------------------------
 void __fastcall TMainForm::DrawArrow(TCanvas *c, int x, int y, int siz,
     int ang, TColor color)
 {
@@ -1274,7 +1497,7 @@ void __fastcall TMainForm::DrawArrow(TCanvas *c, int x, int y, int siz,
     c->Pen->Color=color;
     c->Polygon(p2,3);
 }
-//---------------------------------------------------------------------------
+// open monitor port --------------------------------------------------------
 void __fastcall TMainForm::OpenMoniPort(int port)
 {
     AnsiString s;
@@ -1282,6 +1505,8 @@ void __fastcall TMainForm::OpenMoniPort(int port)
     char path[64];
     
     if (port<=0) return;
+    
+    trace(3,"OpenMoniPort: port=%d\n",port);
     
     for (i=0;i<=MAXPORTOFF;i++) {
         
@@ -1297,11 +1522,13 @@ void __fastcall TMainForm::OpenMoniPort(int port)
     ShowMessage(s.sprintf("monitor port %d-%d open error",port,port+MAXPORTOFF));
     OpenPort=0;
 }
-//---------------------------------------------------------------------------
+// initialize solution buffer -----------------------------------------------
 void __fastcall TMainForm::InitSolBuff(void)
 {
     double ep[]={2000,1,1,0,0,0};
     int i,j;
+    
+    trace(3,"InitSolBuff\n");
     
     delete [] Time;   delete [] SolStat; delete [] Nvsat;  delete [] SolRov;
     delete [] SolRef; delete [] Qr;      delete [] VelRov; delete [] Age;
@@ -1327,14 +1554,16 @@ void __fastcall TMainForm::InitSolBuff(void)
     }
     ScbSol->Max=0; ScbSol->Position=0;
 }
-//---------------------------------------------------------------------------
+// save log file ------------------------------------------------------------
 void __fastcall TMainForm::SaveLog(void)
 {
     FILE *fp;
-    int posf[]={SOLF_LLH,SOLF_LLH,SOLF_XYZ,SOLF_ENU,SOLF_ENU};
+    int posf[]={SOLF_LLH,SOLF_LLH,SOLF_XYZ,SOLF_ENU,SOLF_ENU,SOLF_LLH};
     solopt_t opt;
     double  ep[6],pos[3];
     char file[1024];
+    
+    trace(3,"SaveLog\n");
     
     time2epoch(timeget(),ep);
     sprintf(file,"rtk_%04.0f%02.0f%02.0f%02.0f%02.0f%02.0f.txt",
@@ -1359,20 +1588,25 @@ void __fastcall TMainForm::SaveLog(void)
     outsolhead(fp,&opt);
     fclose(fp);
 }
-//---------------------------------------------------------------------------
+// load navigation data -----------------------------------------------------
 void __fastcall TMainForm::LoadNav(nav_t *nav)
 {
-    TIniFile *ini=new TIniFile("rtknavi.ini");
+    TIniFile *ini=new TIniFile(IniFile);
     AnsiString str,s;
     eph_t eph0={0};
+    char buff[2049],id[32],*p;
     int i;
+    
+    trace(3,"LoadNav\n");
     
     for (i=0;i<MAXSAT;i++) {
         if ((str=ini->ReadString("navi",s.sprintf("eph_%02d",i),""))=="") continue;
         nav->eph[i]=eph0;
-        sscanf(str.c_str(),
-               "%d,%d,%d,%d,%d,%ld,%ld,%ld,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d",
-               &nav->eph[i].sat,
+        strcpy(buff,str.c_str());
+        if (!(p=strchr(buff,','))) continue;
+        *p='\0';
+        if (!(nav->eph[i].sat=satid2no(buff))) continue;
+        sscanf(p+1,"%d,%d,%d,%d,%ld,%ld,%ld,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d",
                &nav->eph[i].iode,
                &nav->eph[i].iodc,
                &nav->eph[i].sva ,
@@ -1419,17 +1653,21 @@ void __fastcall TMainForm::LoadNav(nav_t *nav)
     
     delete ini;
 }
-//---------------------------------------------------------------------------
+// save navigation data -----------------------------------------------------
 void __fastcall TMainForm::SaveNav(nav_t *nav)
 {
-    TIniFile *ini=new TIniFile("rtknavi.ini");
+    TIniFile *ini=new TIniFile(IniFile);
     AnsiString str,s;
+    char id[32];
     int i;
+    
+    trace(3,"SaveNav\n");
     
     for (i=0;i<MAXSAT;i++) {
         if (nav->eph[i].ttr.time==0) continue;
         str="";
-        str=str+s.sprintf("%d,",nav->eph[i].sat);
+        satno2id(nav->eph[i].sat,id);
+        str=str+s.sprintf("%s,",id);
         str=str+s.sprintf("%d,",nav->eph[i].iode);
         str=str+s.sprintf("%d,",nav->eph[i].iodc);
         str=str+s.sprintf("%d,",nav->eph[i].sva);
@@ -1474,7 +1712,7 @@ void __fastcall TMainForm::SaveNav(nav_t *nav)
     
     delete ini;
 }
-//---------------------------------------------------------------------------
+// set tray icon ------------------------------------------------------------
 void __fastcall TMainForm::SetTrayIcon(int index)
 {
     TIcon *icon=new TIcon;
@@ -1482,13 +1720,15 @@ void __fastcall TMainForm::SetTrayIcon(int index)
     TrayIcon->Icon=icon;
     delete icon;
 }
-//---------------------------------------------------------------------------
+// load option from ini file ------------------------------------------------
 void __fastcall TMainForm::LoadOpt(void)
 {
-    TIniFile *ini=new TIniFile("rtknavi.ini");
+    TIniFile *ini=new TIniFile(IniFile);
     AnsiString s;
     int i,j,no,strno[]={0,1,6,2,3,4,5,7};
     char *p;
+    
+    trace(3,"LoadOpt\n");
     
     for (i=0;i<8;i++) {
         no=strno[i];
@@ -1498,6 +1738,9 @@ void __fastcall TMainForm::LoadOpt(void)
         for (j=0;j<4;j++) {
             Paths[i][j]=ini->ReadString("stream",s.sprintf("path_%d_%d",no,j),"");
         }
+    }
+    for (i=0;i<3;i++) {
+        RcvOpt [i]=ini->ReadString("stream",s.sprintf("rcvopt%d",i+1),"");
     }
     for (i=0;i<3;i++) for (j=0;j<2;j++) {
         Cmds[i][j]=ini->ReadString("serial",s.sprintf("cmd_%d_%d",i,j),"");
@@ -1513,6 +1756,7 @@ void __fastcall TMainForm::LoadOpt(void)
     PrcOpt.dynamics =ini->ReadInteger("prcopt", "dynamics",        0);
     PrcOpt.tidecorr =ini->ReadInteger("prcopt", "tidecorr",        0);
     PrcOpt.modear   =ini->ReadInteger("prcopt", "modear",          1);
+    PrcOpt.glomodear=ini->ReadInteger("prcopt", "glomodear",       0);
     PrcOpt.maxout   =ini->ReadInteger("prcopt", "maxout",          5);
     PrcOpt.minlock  =ini->ReadInteger("prcopt", "minlock",         0);
     PrcOpt.minfix   =ini->ReadInteger("prcopt", "minfix",         10);
@@ -1520,7 +1764,8 @@ void __fastcall TMainForm::LoadOpt(void)
     PrcOpt.tropopt  =ini->ReadInteger("prcopt", "tropopt",TROPOPT_SAAS);
     PrcOpt.sateph   =ini->ReadInteger("prcopt", "ephopt",  EPHOPT_BRDC);
     PrcOpt.niter    =ini->ReadInteger("prcopt", "niter",           1);
-    PrcOpt.err[0]   =ini->ReadFloat  ("prcopt", "err0",        100.0);
+    PrcOpt.eratio[0]=ini->ReadFloat  ("prcopt", "eratio0",     100.0);
+    PrcOpt.eratio[1]=ini->ReadFloat  ("prcopt", "eratio1",     100.0);
     PrcOpt.err[1]   =ini->ReadFloat  ("prcopt", "err1",        0.003);
     PrcOpt.err[2]   =ini->ReadFloat  ("prcopt", "err2",        0.003);
     PrcOpt.err[3]   =ini->ReadFloat  ("prcopt", "err3",          0.0);
@@ -1533,8 +1778,10 @@ void __fastcall TMainForm::LoadOpt(void)
     PrcOpt.sclkstab =ini->ReadFloat  ("prcopt", "sclkstab",    5E-12);
     PrcOpt.thresar  =ini->ReadFloat  ("prcopt", "thresar",       3.0);
     PrcOpt.elmaskar =ini->ReadFloat  ("prcopt", "elmaskar",      0.0);
+    PrcOpt.elmaskhold=ini->ReadFloat ("prcopt", "elmaskhold",    0.0);
     PrcOpt.thresslip=ini->ReadFloat  ("prcopt", "thresslip",    0.05);
     PrcOpt.maxtdiff =ini->ReadFloat  ("prcopt", "maxtdiff",     30.0);
+    PrcOpt.maxgdop  =ini->ReadFloat  ("prcopt", "maxgdop",      30.0);
     PrcOpt.maxinno  =ini->ReadFloat  ("prcopt", "maxinno",      30.0);
     ExSats          =ini->ReadString ("prcopt", "exsats",         "");
     PrcOpt.navsys   =ini->ReadInteger("prcopt", "navsys",    SYS_GPS);
@@ -1571,7 +1818,7 @@ void __fastcall TMainForm::LoadOpt(void)
     StaPosFileF     =ini->ReadString ("setting","staposfile",     "");
     GeoidDataFileF  =ini->ReadString ("setting","geoiddatafile",  "");
     DCBFileF        =ini->ReadString ("setting","dcbfile",        "");
-    LocalDirectory  =ini->ReadString ("setting","localdirectory", "");
+    LocalDirectory  =ini->ReadString ("setting","localdirectory","C:\\Temp");
     
     SvrCycle        =ini->ReadInteger("setting","svrcycle",       10);
     TimeoutTime     =ini->ReadInteger("setting","timeouttime", 10000);
@@ -1581,7 +1828,7 @@ void __fastcall TMainForm::LoadOpt(void)
     SolBuffSize     =ini->ReadInteger("setting","solbuffsize",  1000);
     SavedSol        =ini->ReadInteger("setting","savedsol",      100);
     NavSelect       =ini->ReadInteger("setting","navselect",       0);
-    SbasSat         =ini->ReadInteger("setting","sbassat",         0);
+    PrcOpt.sbassatsel=ini->ReadInteger("setting","sbassat",        0);
     DgpsCorr        =ini->ReadInteger("setting","dgpscorr",        0);
     SbasCorr        =ini->ReadInteger("setting","sbascorr",        0);
     
@@ -1597,10 +1844,12 @@ void __fastcall TMainForm::LoadOpt(void)
     LogSwapInterval =ini->ReadString ("setting","logswapinterval","");
     NmeaPos[0]      =ini->ReadFloat  ("setting","nmeapos1",      0.0);
     NmeaPos[1]      =ini->ReadFloat  ("setting","nmeapos2",      0.0);
+    FileSwapMargin  =ini->ReadInteger("setting","fswapmargin",    30);
     
     TimeSys         =ini->ReadInteger("setting","timesys",         0);
     SolType         =ini->ReadInteger("setting","soltype",         0);
     PlotType        =ini->ReadInteger("setting","plottype",        0);
+    ProxyAddr       =ini->ReadString ("setting","proxyaddr",      "");
     MoniPort        =ini->ReadInteger("setting","moniport",DEFAULTPORT);
     
     for (i=0;i<3;i++) {
@@ -1637,13 +1886,15 @@ void __fastcall TMainForm::LoadOpt(void)
     
     delete ini;
 }
-//---------------------------------------------------------------------------
+// save option to ini file --------------------------------------------------
 void __fastcall TMainForm::SaveOpt(void)
 {
-    TIniFile *ini=new TIniFile("rtknavi.ini");
+    TIniFile *ini=new TIniFile(IniFile);
     AnsiString s;
     int i,j,no,strno[]={0,1,6,2,3,4,5,7};
     char *p;
+    
+    trace(3,"SaveOpt\n");
     
     for (i=0;i<8;i++) {
         no=strno[i];
@@ -1653,6 +1904,9 @@ void __fastcall TMainForm::SaveOpt(void)
         for (j=0;j<4;j++) {
             ini->WriteString("stream",s.sprintf("path_%d_%d",no,j),Paths[i][j]);
         }
+    }
+    for (i=0;i<3;i++) {
+        ini->WriteString("stream",s.sprintf("rcvopt%d",i+1),RcvOpt[i]);
     }
     for (i=0;i<3;i++) for (j=0;j<2;j++) {
         for (p=Cmds[i][j].c_str();*p;p++) {
@@ -1668,6 +1922,7 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteInteger("prcopt", "dynamics",   PrcOpt.dynamics    );
     ini->WriteInteger("prcopt", "tidecorr",   PrcOpt.tidecorr    );
     ini->WriteInteger("prcopt", "modear",     PrcOpt.modear      );
+    ini->WriteInteger("prcopt", "glomodear",  PrcOpt.glomodear   );
     ini->WriteInteger("prcopt", "maxout",     PrcOpt.maxout      );
     ini->WriteInteger("prcopt", "minlock",    PrcOpt.minlock     );
     ini->WriteInteger("prcopt", "minfix",     PrcOpt.minfix      );
@@ -1675,7 +1930,8 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteInteger("prcopt", "tropopt",    PrcOpt.tropopt     );
     ini->WriteInteger("prcopt", "ephopt",     PrcOpt.sateph      );
     ini->WriteInteger("prcopt", "niter",      PrcOpt.niter       );
-    ini->WriteFloat  ("prcopt", "err0",       PrcOpt.err[0]      );
+    ini->WriteFloat  ("prcopt", "eratio0",    PrcOpt.eratio[0]   );
+    ini->WriteFloat  ("prcopt", "eratio1",    PrcOpt.eratio[1]   );
     ini->WriteFloat  ("prcopt", "err1",       PrcOpt.err[1]      );
     ini->WriteFloat  ("prcopt", "err2",       PrcOpt.err[2]      );
     ini->WriteFloat  ("prcopt", "err3",       PrcOpt.err[3]      );
@@ -1688,8 +1944,10 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteFloat  ("prcopt", "sclkstab",   PrcOpt.sclkstab    );
     ini->WriteFloat  ("prcopt", "thresar",    PrcOpt.thresar     );
     ini->WriteFloat  ("prcopt", "elmaskar",   PrcOpt.elmaskar    );
+    ini->WriteFloat  ("prcopt", "elmaskhold", PrcOpt.elmaskhold  );
     ini->WriteFloat  ("prcopt", "thresslip",  PrcOpt.thresslip   );
     ini->WriteFloat  ("prcopt", "maxtdiff",   PrcOpt.maxtdiff    );
+    ini->WriteFloat  ("prcopt", "maxgdop",    PrcOpt.maxgdop     );
     ini->WriteFloat  ("prcopt", "maxinno",    PrcOpt.maxinno     );
     ini->WriteString ("prcopt", "exsats",     ExSats             );
     ini->WriteInteger("prcopt", "navsys",     PrcOpt.navsys      );
@@ -1735,7 +1993,7 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteInteger("setting","solbuffsize",SolBuffSize        );
     ini->WriteInteger("setting","savedsol",   SavedSol           );
     ini->WriteInteger("setting","navselect",  NavSelect          );
-    ini->WriteInteger("setting","sbassat",    SbasSat            );
+    ini->WriteInteger("setting","sbassat",    PrcOpt.sbassatsel  );
     ini->WriteInteger("setting","dgpscorr",   DgpsCorr           );
     ini->WriteInteger("setting","sbascorr",   SbasCorr           );
     
@@ -1751,10 +2009,12 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteString ("setting","logswapinterval",LogSwapInterval);
     ini->WriteFloat  ("setting","nmeapos1",   NmeaPos[0]         );
     ini->WriteFloat  ("setting","nmeapos2",   NmeaPos[1]         );
+    ini->WriteInteger("setting","fswapmargin",FileSwapMargin     );
     
     ini->WriteInteger("setting","timesys",    TimeSys            );
     ini->WriteInteger("setting","soltype",    SolType            );
     ini->WriteInteger("setting","plottype",   PlotType           );
+    ini->WriteString ("setting","proxyaddr",  ProxyAddr          );
     ini->WriteInteger("setting","moniport",   MoniPort           );
     
     for (i=0;i<3;i++) {
@@ -1789,3 +2049,5 @@ void __fastcall TMainForm::SaveOpt(void)
     
     delete ini;
 }
+//---------------------------------------------------------------------------
+

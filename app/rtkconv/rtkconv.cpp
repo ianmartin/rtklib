@@ -10,6 +10,7 @@ USEFORM("..\appcmn\aboutdlg.cpp", AboutDialog);
 USEFORM("..\appcmn\timedlg.cpp", TimeDialog);
 USEFORM("..\appcmn\confdlg.cpp", ConfDialog);
 USEFORM("startdlg.cpp", StartDialog);
+USEFORM("..\appcmn\keydlg.cpp", KeyDialog);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -25,6 +26,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->CreateForm(__classid(TTimeDialog), &TimeDialog);
 		Application->CreateForm(__classid(TConfDialog), &ConfDialog);
 		Application->CreateForm(__classid(TStartDialog), &StartDialog);
+		Application->CreateForm(__classid(TKeyDialog), &KeyDialog);
 		Application->Run();
 	}
 	catch (Exception &exception)

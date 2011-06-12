@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 * ss2.c : superstar II receiver dependent functions
 *
-*          Copyright (C) 2007-2009 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
 *
 * reference:
 *     [1] NovAtel, OM-20000086 Superstar II Firmware Reference Manuall, 2005
@@ -11,6 +11,8 @@
 *           2008/06/16 1.2 separate common functions to rcvcmn.c
 *           2009/04/01 1.3 fix bug on decode #21 message
 *           2010/08/20 1.4 fix problem with minus value of time slew in #23
+*                          (2.4.0_p5)
+*           2011/05/27 1.5 fix problem with ARM compiler
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -22,13 +24,21 @@
 #define ID_SS2RAW   23          /* ss2 message ID#23 measurement block */
 #define ID_SS2SBAS  67          /* ss2 message ID#67 sbas data */
 
+static const char rcsid[]="$Id: ss2.c,v 1.2 2008/07/14 00:05:05 TTAKA Exp $";
+
+/* get/set fields (little-endian) --------------------------------------------*/
 #define U1(p)       (*((unsigned char *)(p)))
 #define U2(p)       (*((unsigned short *)(p)))
 #define U4(p)       (*((unsigned int *)(p)))
-#define R8(p)       (*((double *)(p)))
 
-static const char rcsid[]="$Id: ss2.c,v 1.2 2008/07/14 00:05:05 TTAKA Exp $";
-
+static double R8(const unsigned char *p)
+{
+    double value;
+    unsigned char *q=(unsigned char *)&value;
+    int i;
+    for (i=0;i<8;i++) *q++=*p++;
+    return value;
+}
 /* checksum ------------------------------------------------------------------*/
 static int chksum(const unsigned char *buff, int len)
 {
@@ -126,7 +136,7 @@ static int decode_ss2meas(raw_t *raw)
         raw->icpp[sat-1]=icp;
         raw->obs.data[n].L[0]=icp+raw->icpc;
         raw->obs.data[n].D[0]=0.0;
-        raw->obs.data[n].SNR[0]=(unsigned char)(floor(U1(p+1)*0.25+0.5));
+        raw->obs.data[n].SNR[0]=(unsigned char)(floor(U1(p+1)+0.5));
         sc=U1(p+10);
         raw->obs.data[n].LLI[0]=(int)((unsigned char)sc-(unsigned char)raw->lockt[sat-1][0])>0;
         raw->obs.data[n].LLI[0]|=U1(p+6)&1?2:0;
@@ -148,9 +158,8 @@ static int decode_ss2meas(raw_t *raw)
 static int decode_ss2eph(raw_t *raw)
 {
     eph_t eph={0};
-    double ion[8]={0},utc[4]={0};
     unsigned int tow;
-    int i,j,prn,sat,leaps=0;
+    int i,j,prn,sat;
     unsigned char *p=raw->buff+4,buff[90]={0};
     
     trace(4,"decode_ss2eph: len=%d\n",raw->len);
@@ -175,9 +184,9 @@ static int decode_ss2eph(raw_t *raw)
         buff[30*i+5]=(unsigned char)(((tow&1)<<7)+((i+1)<<2));
         for (j=0;j<24;j++) buff[30*i+6+j]=p[1+24*i+j];
     }
-    if (decode_frame(buff   ,&eph,ion,utc,&leaps)!=1||
-        decode_frame(buff+30,&eph,ion,utc,&leaps)!=2||
-        decode_frame(buff+60,&eph,ion,utc,&leaps)!=3) {
+    if (decode_frame(buff   ,&eph,NULL,NULL,NULL,NULL)!=1||
+        decode_frame(buff+30,&eph,NULL,NULL,NULL,NULL)!=2||
+        decode_frame(buff+60,&eph,NULL,NULL,NULL,NULL)!=3) {
         trace(2,"ss2 id#22 subframe error: prn=%d\n",prn);
         return -1;
     }

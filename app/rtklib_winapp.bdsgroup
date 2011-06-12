@@ -16,7 +16,8 @@
       <Projects Name="srctblbrows.exe">srctblbrows\srctblbrows.bdsproj</Projects>
       <Projects Name="strsvr.exe">strsvr\strsvr.bdsproj</Projects>
       <Projects Name="rtkpost_mkl.exe">rtkpost_mkl\rtkpost_mkl.bdsproj</Projects>
-      <Projects Name="Targets">rtkconv.exe rtknavi.exe rtkplot.exe rtkpost.exe srctblbrows.exe strsvr.exe rtkpost_mkl.exe</Projects>
+      <Projects Name="rtknavi_mkl.exe">rtknavi_mkl\rtknavi_mkl.bdsproj</Projects>
+      <Projects Name="Targets">rtkconv.exe rtknavi.exe rtkplot.exe rtkpost.exe srctblbrows.exe strsvr.exe rtkpost_mkl.exe rtknavi_mkl.exe</Projects>
     </Projects>
     <Dependencies/>
   </Default.Personality>

@@ -1,10 +1,11 @@
 /*------------------------------------------------------------------------------
 * str2str.c : console version of stream server
 *
-*          Copyright (C) 2007-2009 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
 *
 * version : $Revision: 1.1 $ $Date: 2008/07/17 21:54:53 $
 * history : 2009/06/17  1.0 new
+*           2011/05/29  1.1 add -f, -l and -x option
 *-----------------------------------------------------------------------------*/
 #include <signal.h>
 #include <unistd.h>
@@ -45,8 +46,11 @@ static const char *help[]={
 " -s msec       timeout time (ms) [10000]",
 " -r msec       reconnect interval (ms) [10000]",
 " -n msec       nmea request cycle (m) [0]",
+" -f sec        file swap margin (s) [30]",
 " -c file       receiver commands file [no]",
 " -p lat lon    nmea position (latitude/longitude) (deg)",
+" -l local_dir  ftp/http local directory []",
+" -x proxy_addr http/ntrip proxy address [no]",
 " -t level      trace level [0]",
 " -h            print help",
 };
@@ -103,8 +107,9 @@ int main(int argc, char **argv)
     const char ss[]={'E','-','W','C','C'};
     double pos[2]={0};
     char *paths[MAXSTR],s[MAXSTR][MAXSTRPATH]={{0}},*cmdfile="";
+    char *local="",*proxy="";
     char *p,str[64]="",msg[1024]="";
-    int i,n=0,dispint=5000,trlevel=0,opts[]={10000,10000,2000,32768,10,0};
+    int i,n=0,dispint=5000,trlevel=0,opts[]={10000,10000,2000,32768,10,0,30};
     int types[MAXSTR]={0},stat[MAXSTR]={0},byte[MAXSTR]={0},bps[MAXSTR]={0};
     
     for (i=0;i<MAXSTR;i++) paths[i]=s[i];
@@ -129,7 +134,10 @@ int main(int argc, char **argv)
         else if (!strcmp(argv[i],"-s" )&&i+1<argc) opts[0]=atoi(argv[++i]);
         else if (!strcmp(argv[i],"-r" )&&i+1<argc) opts[1]=atoi(argv[++i]);
         else if (!strcmp(argv[i],"-n" )&&i+1<argc) opts[5]=atoi(argv[++i]);
+        else if (!strcmp(argv[i],"-f" )&&i+1<argc) opts[6]=atoi(argv[++i]);
         else if (!strcmp(argv[i],"-c" )&&i+1<argc) cmdfile=argv[++i];
+        else if (!strcmp(argv[i],"-l" )&&i+1<argc) local=argv[++i];
+        else if (!strcmp(argv[i],"-x" )&&i+1<argc) proxy=argv[++i];
         else if (!strcmp(argv[i],"-t" )&&i+1<argc) trlevel=atoi(argv[++i]);
         else if (*argv[i]=='-') printhelp();
     }
@@ -150,6 +158,9 @@ int main(int argc, char **argv)
     tracelevel(trlevel);
     
     fprintf(stderr,"stream server start\n");
+    
+    strsetdir(local);
+    strsetproxy(proxy);
     
     /* start stream server */
     if (*cmdfile) readcmd(cmdfile,cmd,0);

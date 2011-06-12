@@ -5,8 +5,8 @@ object MainForm: TMainForm
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
   Caption = 'RTKPOST'
-  ClientHeight = 314
-  ClientWidth = 418
+  ClientHeight = 317
+  ClientWidth = 444
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -23,24 +23,30 @@ object MainForm: TMainForm
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 418
-    Height = 287
+    Width = 444
+    Height = 291
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
     object Message: TPanel
       Left = 2
-      Top = 256
-      Width = 415
+      Top = 262
+      Width = 441
       Height = 22
       BevelInner = bvRaised
       BevelOuter = bvLowered
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clGray
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
       TabOrder = 3
       object BtnAbout: TSpeedButton
-        Left = 393
-        Top = 1
-        Width = 18
-        Height = 18
+        Left = 421
+        Top = 2
+        Width = 17
+        Height = 17
         Caption = '?'
         Flat = True
         Font.Charset = DEFAULT_CHARSET
@@ -51,11 +57,73 @@ object MainForm: TMainForm
         ParentFont = False
         OnClick = BtnAboutClick
       end
+      object BtnOutputView2: TSpeedButton
+        Left = 20
+        Top = 2
+        Width = 17
+        Height = 17
+        Hint = 'Show Debug Trace'
+        Flat = True
+        Glyph.Data = {
+          3E020000424D3E0200000000000036000000280000000D0000000D0000000100
+          1800000000000802000000000000000000000000000000000000FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFF00FFFFFF00000000000000000000000000000000000000
+          0000000000000000000000000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
+          FFFFFF808080808080808080808080808080FFFFFFFFFFFFFFFFFF000000FFFF
+          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFF000000FFFFFF00FFFFFF000000FFFFFF808080808080808080FFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
+          FFFFFF808080808080808080808080808080808080808080FFFFFF000000FFFF
+          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFF000000FFFFFF00FFFFFF00000000000000000000000000000000000000
+          0000000000000000000000000000FFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FF00}
+        ParentShowHint = False
+        ShowHint = True
+        OnClick = BtnOutputView2Click
+      end
+      object BtnOutputView1: TSpeedButton
+        Left = 2
+        Top = 2
+        Width = 17
+        Height = 17
+        Hint = 'Show Stat File'
+        Flat = True
+        Glyph.Data = {
+          3E020000424D3E0200000000000036000000280000000D0000000D0000000100
+          1800000000000802000000000000000000000000000000000000FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFF00FFFFFF00000000000000000000000000000000000000
+          0000000000000000000000000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
+          FFFFFF808080808080808080808080808080FFFFFFFFFFFFFFFFFF000000FFFF
+          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFF000000FFFFFF00FFFFFF000000FFFFFF808080808080808080FFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
+          FFFFFF808080808080808080808080808080808080808080FFFFFF000000FFFF
+          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFF000000FFFFFF00FFFFFF00000000000000000000000000000000000000
+          0000000000000000000000000000FFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FF00}
+        ParentShowHint = False
+        ShowHint = True
+        OnClick = BtnOutputView1Click
+      end
     end
     object Progress: TProgressBar
       Left = 2
-      Top = 279
-      Width = 415
+      Top = 285
+      Width = 441
       Height = 7
       Align = alCustom
       Smooth = True
@@ -65,27 +133,27 @@ object MainForm: TMainForm
     object Panel3: TPanel
       Left = 2
       Top = 2
-      Width = 415
+      Width = 441
       Height = 47
       BevelInner = bvRaised
       BevelOuter = bvLowered
       TabOrder = 0
       object LabelTimeInt: TLabel
-        Left = 356
+        Left = 374
         Top = 23
         Width = 5
         Height = 13
         Caption = 's'
       end
       object LabelTimeUnit: TLabel
-        Left = 402
+        Left = 426
         Top = 23
         Width = 7
         Height = 13
         Caption = 'H'
       end
       object BtnTime1: TSpeedButton
-        Left = 120
+        Left = 122
         Top = 3
         Width = 17
         Height = 17
@@ -94,7 +162,7 @@ object MainForm: TMainForm
         OnClick = BtnTime1Click
       end
       object BtnTime2: TSpeedButton
-        Left = 272
+        Left = 280
         Top = 3
         Width = 17
         Height = 17
@@ -120,7 +188,7 @@ object MainForm: TMainForm
         Text = '2000/01/01'
       end
       object TimeH1: TEdit
-        Left = 84
+        Left = 86
         Top = 20
         Width = 55
         Height = 21
@@ -128,7 +196,7 @@ object MainForm: TMainForm
         Text = '00:00:00'
       end
       object TimeEnd: TCheckBox
-        Left = 156
+        Left = 164
         Top = 4
         Width = 101
         Height = 17
@@ -137,9 +205,9 @@ object MainForm: TMainForm
         OnClick = TimeStartClick
       end
       object TimeH1UD: TUpDown
-        Left = 138
+        Left = 140
         Top = 20
-        Width = 15
+        Width = 17
         Height = 20
         Min = -32000
         Max = 32000
@@ -148,7 +216,7 @@ object MainForm: TMainForm
         OnChangingEx = TimeH1UDChangingEx
       end
       object TimeY2: TEdit
-        Left = 156
+        Left = 164
         Top = 20
         Width = 65
         Height = 21
@@ -156,9 +224,9 @@ object MainForm: TMainForm
         Text = '2099/12/31'
       end
       object TimeY2UD: TUpDown
-        Left = 220
+        Left = 226
         Top = 20
-        Width = 15
+        Width = 17
         Height = 20
         Min = -32000
         Max = 32000
@@ -166,7 +234,7 @@ object MainForm: TMainForm
         OnChangingEx = TimeY2UDChangingEx
       end
       object TimeH2: TEdit
-        Left = 236
+        Left = 244
         Top = 20
         Width = 55
         Height = 21
@@ -174,9 +242,9 @@ object MainForm: TMainForm
         Text = '23:59:59'
       end
       object TimeH2UD: TUpDown
-        Left = 290
+        Left = 300
         Top = 20
-        Width = 15
+        Width = 17
         Height = 20
         Min = -32000
         Max = 32000
@@ -185,7 +253,7 @@ object MainForm: TMainForm
         OnChangingEx = TimeH2UDChangingEx
       end
       object TimeIntF: TCheckBox
-        Left = 300
+        Left = 324
         Top = 4
         Width = 61
         Height = 17
@@ -194,7 +262,7 @@ object MainForm: TMainForm
         OnClick = TimeIntFClick
       end
       object TimeUnitF: TCheckBox
-        Left = 364
+        Left = 386
         Top = 4
         Width = 45
         Height = 17
@@ -203,9 +271,9 @@ object MainForm: TMainForm
         OnClick = TimeUnitFClick
       end
       object TimeUnit: TEdit
-        Left = 364
+        Left = 386
         Top = 20
-        Width = 35
+        Width = 37
         Height = 21
         TabOrder = 13
         Text = '24'
@@ -213,7 +281,7 @@ object MainForm: TMainForm
       object TimeY1UD: TUpDown
         Left = 68
         Top = 20
-        Width = 15
+        Width = 17
         Height = 20
         Min = -32000
         Max = 32000
@@ -222,7 +290,7 @@ object MainForm: TMainForm
         OnChangingEx = TimeY1UDChangingEx
       end
       object TimeInt: TComboBox
-        Left = 308
+        Left = 324
         Top = 20
         Width = 47
         Height = 21
@@ -249,22 +317,22 @@ object MainForm: TMainForm
     object Panel4: TPanel
       Left = 2
       Top = 50
-      Width = 415
-      Height = 163
+      Width = 441
+      Height = 159
       BevelInner = bvRaised
       BevelOuter = bvLowered
       TabOrder = 1
       object LabelInputFile1: TLabel
-        Left = 8
-        Top = 6
-        Width = 93
+        Left = 6
+        Top = 4
+        Width = 53
         Height = 13
-        Caption = 'RINEX OBS (Rover)'
+        Caption = 'RINEX OBS'
       end
       object BtnInputPlot1: TSpeedButton
-        Left = 372
+        Left = 402
         Top = 2
-        Width = 19
+        Width = 17
         Height = 17
         Flat = True
         Glyph.Data = {
@@ -290,9 +358,9 @@ object MainForm: TMainForm
         OnClick = BtnInputPlot1Click
       end
       object BtnInputView1: TSpeedButton
-        Left = 392
+        Left = 420
         Top = 2
-        Width = 19
+        Width = 17
         Height = 17
         Flat = True
         Glyph.Data = {
@@ -318,9 +386,9 @@ object MainForm: TMainForm
         OnClick = BtnInputView1Click
       end
       object BtnInputView3: TSpeedButton
-        Left = 352
-        Top = 78
-        Width = 19
+        Left = 384
+        Top = 74
+        Width = 17
         Height = 17
         Flat = True
         Glyph.Data = {
@@ -346,16 +414,16 @@ object MainForm: TMainForm
         OnClick = BtnInputView3Click
       end
       object LabelInputFile2: TLabel
-        Left = 8
-        Top = 82
-        Width = 192
+        Left = 6
+        Top = 78
+        Width = 205
         Height = 13
-        Caption = 'RINEX NAV/GNAV/CLK, SP3, SBS or EMS'
+        Caption = 'RINEX *NAV/CLK, SP3, IONEX or SBS/EMS '
       end
       object BtnInputView2: TSpeedButton
-        Left = 392
-        Top = 40
-        Width = 19
+        Left = 420
+        Top = 38
+        Width = 17
         Height = 17
         Flat = True
         Glyph.Data = {
@@ -381,9 +449,9 @@ object MainForm: TMainForm
         OnClick = BtnInputView2Click
       end
       object BtnInputPlot2: TSpeedButton
-        Left = 372
-        Top = 40
-        Width = 19
+        Left = 402
+        Top = 38
+        Width = 17
         Height = 17
         Flat = True
         Glyph.Data = {
@@ -409,16 +477,16 @@ object MainForm: TMainForm
         OnClick = BtnInputPlot2Click
       end
       object LabelInputFile3: TLabel
-        Left = 8
-        Top = 44
-        Width = 124
+        Left = 6
+        Top = 40
+        Width = 120
         Height = 13
-        Caption = 'RINEX OBS (Base Station)'
+        Caption = 'RINEX OBS: Base Station'
       end
       object BtnInputView4: TSpeedButton
-        Left = 372
-        Top = 78
-        Width = 19
+        Left = 402
+        Top = 74
+        Width = 17
         Height = 17
         Flat = True
         Glyph.Data = {
@@ -444,9 +512,9 @@ object MainForm: TMainForm
         OnClick = BtnInputView4Click
       end
       object BtnInputView5: TSpeedButton
-        Left = 392
-        Top = 78
-        Width = 19
+        Left = 420
+        Top = 74
+        Width = 17
         Height = 17
         Flat = True
         Glyph.Data = {
@@ -471,10 +539,19 @@ object MainForm: TMainForm
           FF00}
         OnClick = BtnInputView5Click
       end
+      object BtnKeyword: TSpeedButton
+        Left = 164
+        Top = 2
+        Width = 17
+        Height = 16
+        Caption = '?'
+        Flat = True
+        OnClick = BtnKeywordClick
+      end
       object InputFile1: TComboBox
         Left = 4
-        Top = 20
-        Width = 389
+        Top = 18
+        Width = 417
         Height = 21
         DropDownCount = 20
         ItemHeight = 0
@@ -482,9 +559,9 @@ object MainForm: TMainForm
         OnChange = InputFile1Change
       end
       object BtnInputFile1: TButton
-        Left = 392
-        Top = 20
-        Width = 19
+        Left = 420
+        Top = 18
+        Width = 17
         Height = 19
         Caption = '...'
         Font.Charset = DEFAULT_CHARSET
@@ -497,9 +574,9 @@ object MainForm: TMainForm
         OnClick = BtnInputFile1Click
       end
       object BtnInputFile3: TButton
-        Left = 392
-        Top = 96
-        Width = 19
+        Left = 420
+        Top = 92
+        Width = 17
         Height = 19
         Caption = '...'
         Font.Charset = DEFAULT_CHARSET
@@ -513,17 +590,17 @@ object MainForm: TMainForm
       end
       object InputFile3: TComboBox
         Left = 4
-        Top = 96
-        Width = 389
+        Top = 92
+        Width = 417
         Height = 21
         DropDownCount = 20
         ItemHeight = 0
         TabOrder = 4
       end
       object BtnInputFile2: TButton
-        Left = 392
-        Top = 58
-        Width = 19
+        Left = 420
+        Top = 54
+        Width = 17
         Height = 19
         Caption = '...'
         Font.Charset = DEFAULT_CHARSET
@@ -537,8 +614,8 @@ object MainForm: TMainForm
       end
       object InputFile2: TComboBox
         Left = 4
-        Top = 58
-        Width = 389
+        Top = 54
+        Width = 417
         Height = 21
         DropDownCount = 20
         ItemHeight = 0
@@ -546,17 +623,17 @@ object MainForm: TMainForm
       end
       object InputFile4: TComboBox
         Left = 4
-        Top = 118
-        Width = 389
+        Top = 114
+        Width = 417
         Height = 21
         DropDownCount = 20
         ItemHeight = 0
         TabOrder = 6
       end
       object BtnInputFile4: TButton
-        Left = 392
-        Top = 118
-        Width = 19
+        Left = 420
+        Top = 114
+        Width = 17
         Height = 19
         Caption = '...'
         Font.Charset = DEFAULT_CHARSET
@@ -570,17 +647,17 @@ object MainForm: TMainForm
       end
       object InputFile5: TComboBox
         Left = 4
-        Top = 140
-        Width = 389
+        Top = 136
+        Width = 417
         Height = 21
         DropDownCount = 20
         ItemHeight = 0
         TabOrder = 8
       end
       object BtnInputFile5: TButton
-        Left = 392
-        Top = 140
-        Width = 19
+        Left = 420
+        Top = 136
+        Width = 17
         Height = 19
         Caption = '...'
         Font.Charset = DEFAULT_CHARSET
@@ -595,88 +672,47 @@ object MainForm: TMainForm
     end
     object Panel5: TPanel
       Left = 2
-      Top = 214
-      Width = 415
-      Height = 41
+      Top = 210
+      Width = 441
+      Height = 51
       BevelInner = bvRaised
       BevelOuter = bvLowered
       TabOrder = 2
       object Label1: TLabel
         Left = 6
-        Top = 2
-        Width = 53
+        Top = 7
+        Width = 38
         Height = 13
-        Caption = 'Output File'
+        Caption = 'Solution'
       end
-      object BtnOutputView1: TSpeedButton
-        Left = 372
-        Top = 2
-        Width = 19
-        Height = 15
-        Flat = True
-        Glyph.Data = {
-          3E020000424D3E0200000000000036000000280000000D0000000D0000000100
-          1800000000000802000000000000000000000000000000000000FFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFF00FFFFFF00000000000000000000000000000000000000
-          0000000000000000000000000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
-          FFFFFF808080808080808080808080808080FFFFFFFFFFFFFFFFFF000000FFFF
-          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFF000000FFFFFF00FFFFFF000000FFFFFF808080808080808080FFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
-          FFFFFF808080808080808080808080808080808080808080FFFFFF000000FFFF
-          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFF000000FFFFFF00FFFFFF00000000000000000000000000000000000000
-          0000000000000000000000000000FFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FF00}
-        OnClick = BtnOutputView1Click
+      object LabelOutDir: TLabel
+        Left = 65
+        Top = 7
+        Width = 13
+        Height = 13
+        Caption = 'Dir'
       end
-      object BtnOutputView2: TSpeedButton
-        Left = 392
-        Top = 2
-        Width = 19
-        Height = 15
-        Flat = True
-        Glyph.Data = {
-          3E020000424D3E0200000000000036000000280000000D0000000D0000000100
-          1800000000000802000000000000000000000000000000000000FFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFF00FFFFFF00000000000000000000000000000000000000
-          0000000000000000000000000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
-          FFFFFF808080808080808080808080808080FFFFFFFFFFFFFFFFFF000000FFFF
-          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFF000000FFFFFF00FFFFFF000000FFFFFF808080808080808080FFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
-          FFFFFF808080808080808080808080808080808080808080FFFFFF000000FFFF
-          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFF000000FFFFFF00FFFFFF00000000000000000000000000000000000000
-          0000000000000000000000000000FFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FF00}
-        OnClick = BtnOutputView2Click
+      object OutDirEna: TCheckBox
+        Left = 48
+        Top = 6
+        Width = 15
+        Height = 17
+        TabOrder = 0
+        OnClick = OutDirEnaClick
       end
       object OutputFile: TComboBox
         Left = 4
-        Top = 16
-        Width = 389
+        Top = 26
+        Width = 417
         Height = 21
         DropDownCount = 20
         ItemHeight = 0
-        TabOrder = 0
+        TabOrder = 3
       end
       object BtnOutputFile: TButton
-        Left = 392
-        Top = 16
-        Width = 19
+        Left = 420
+        Top = 26
+        Width = 17
         Height = 19
         Caption = '...'
         Font.Charset = DEFAULT_CHARSET
@@ -685,68 +721,93 @@ object MainForm: TMainForm
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
-        TabOrder = 1
+        TabOrder = 4
         OnClick = BtnOutputFileClick
+      end
+      object OutDir: TEdit
+        Left = 82
+        Top = 4
+        Width = 339
+        Height = 21
+        Enabled = False
+        TabOrder = 1
+        OnChange = OutDirChange
+      end
+      object BtnOutDir: TButton
+        Left = 420
+        Top = 4
+        Width = 17
+        Height = 19
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 2
+        OnClick = BtnOutDirClick
       end
     end
   end
   object Panel2: TPanel
     Left = 0
-    Top = 287
-    Width = 418
-    Height = 27
+    Top = 291
+    Width = 444
+    Height = 26
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
     object BtnPlot: TButton
       Left = 2
       Top = 2
-      Width = 67
+      Width = 72
       Height = 23
       Caption = '&Plot...'
       TabOrder = 0
       OnClick = BtnPlotClick
     end
     object BtnView: TButton
-      Left = 70
+      Left = 76
       Top = 2
-      Width = 67
+      Width = 72
       Height = 23
       Caption = '&View...'
       TabOrder = 1
       OnClick = BtnViewClick
     end
     object BtnToKML: TButton
-      Left = 138
+      Left = 150
       Top = 2
-      Width = 67
+      Width = 72
       Height = 23
       Caption = 'To &KML...'
       TabOrder = 2
       OnClick = BtnToKMLClick
     end
     object BtnOption: TButton
-      Left = 206
+      Left = 223
       Top = 2
-      Width = 67
+      Width = 72
       Height = 23
       Caption = '&Options...'
       TabOrder = 3
       OnClick = BtnOptionClick
     end
     object BtnExec: TButton
-      Left = 274
+      Left = 297
       Top = 2
-      Width = 69
+      Width = 72
       Height = 23
       Caption = 'E&xecute'
       TabOrder = 4
       OnClick = BtnExecClick
     end
     object BtnExit: TButton
-      Left = 344
+      Left = 371
       Top = 2
-      Width = 69
+      Width = 72
       Height = 23
       Caption = '&Exit'
       TabOrder = 5
@@ -755,20 +816,21 @@ object MainForm: TMainForm
   end
   object OpenDialog: TOpenDialog
     Filter = 
-      'All Files (*.*)|*.*|RINEX OBS File (*.*o,*.*d,*.obs)|*.*o;*.*d;*' +
-      '.obs|RINEX NAV File (*.*n,*.*g,*.nav;*.gnav)|*.*n;*.*g;*.nav;*.g' +
-      'nav|SP3 File (*.sp3,*.eph*)|*.sp3;*eph*|RINEX CLK File (*.clk*)|' +
-      '*.clk*|SBAS Log File (*.sbs,*.ems)|*.sbs;*.ems'
+      'All (*.*)|*.*|RINEX OBS (*.obs,*.*O,*.*D)|*.obs;*.*O;*.*D|RINEX ' +
+      'NAV (*.*nav,*.*N,*.*P,*.*G,*.*H,*.*Q)|*.*nav;*.*N;*.*P;*.*G;*.*H' +
+      ';*.*Q|Precise Ephemeris/Clock (*.sp3,*.eph*,*.clk*)|*.sp3;*eph*;' +
+      '*.clk*|SBAS Log (*.sbs,*.ems)|*.sbs;*.ems|IONEX (*.*i,*.ionex)|*' +
+      '.*i;*.ionex'
     Options = [ofHideReadOnly, ofNoChangeDir, ofAllowMultiSelect, ofEnableSizing]
     OptionsEx = [ofExNoPlacesBar]
-    Left = 352
-    Top = 252
+    Left = 354
+    Top = 254
   end
   object SaveDialog: TSaveDialog
     Filter = 'All Files (*.*)|*.*|Position Files (*.pos)|*.pos'
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     OptionsEx = [ofExNoPlacesBar]
-    Left = 324
-    Top = 252
+    Left = 326
+    Top = 254
   end
 end

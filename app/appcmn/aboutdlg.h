@@ -12,7 +12,6 @@
 class TAboutDialog : public TForm
 {
 __published:
-	TButton *BtnOk;
 	TLabel *LabelVer;
 	TLabel *LabelAbout;
 	TLabel *LabelCopyright;
@@ -23,6 +22,8 @@ __published:
 	TImage *Icon5;
 	TImage *Icon6;
 	TImage *Icon7;
+	TPanel *Panel1;
+	TButton *BtnOk;
 	void __fastcall FormShow(TObject *Sender);
 private:
 public:

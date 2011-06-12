@@ -12,6 +12,7 @@ USEFORM("..\appcmn\aboutdlg.cpp", AboutDialog);
 USEFORM("..\rtkpost\kmzconv.cpp", ConvDialog);
 USEFORM("..\rtkpost\postmain.cpp", MainForm);
 USEFORM("..\rtkpost\postopt.cpp", OptDialog);
+USEFORM("..\appcmn\keydlg.cpp", KeyDialog);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -28,6 +29,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->CreateForm(__classid(TAboutDialog), &AboutDialog);
 		Application->CreateForm(__classid(TConvDialog), &ConvDialog);
 		Application->CreateForm(__classid(TOptDialog), &OptDialog);
+		Application->CreateForm(__classid(TKeyDialog), &KeyDialog);
 		Application->Run();
 	}
 	catch (Exception &exception)

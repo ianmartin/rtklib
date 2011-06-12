@@ -4,6 +4,9 @@ cd ..
 cd rtknavi
 call clean.bat
 cd ..
+cd rtknavi_mkl
+call clean.bat
+cd ..
 cd rtkplot
 call clean.bat
 cd ..

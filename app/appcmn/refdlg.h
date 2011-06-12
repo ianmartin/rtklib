@@ -20,15 +20,18 @@ __published:
 	TPanel *Panel2;
 	TButton *BtnOK;
 	TButton *BtnCancel;
-	TComboBox *FormatS;
+	TButton *BtnFind;
+	TEdit *FindStr;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnOKClick(TObject *Sender);
 	void __fastcall StaListDblClick(TObject *Sender);
 	void __fastcall StaListMouseDown(TObject *Sender, TMouseButton Button,
           TShiftState Shift, int X, int Y);
 	void __fastcall BtnLoadClick(TObject *Sender);
-	void __fastcall FormatSChange(TObject *Sender);
+	void __fastcall BtnFindClick(TObject *Sender);
+	void __fastcall FindStrKeyPress(TObject *Sender, char &Key);
 private:
+	void __fastcall FindList(void);
 	void __fastcall LoadList(void);
 	void __fastcall LoadSinex(void);
 	void __fastcall SortList(int col);

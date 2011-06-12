@@ -11,6 +11,8 @@
 #include <Buttons.hpp>
 #include <Graphics.hpp>
 #include <ComCtrls.hpp>
+#include <FileCtrl.hpp>
+#include <vcl\inifiles.hpp>
 
 #include "rtklib.h"
 //---------------------------------------------------------------------------
@@ -30,8 +32,6 @@ __published:
 	TButton *BtnOutFile2;
 	TButton *BtnOutFile4;
 	TButton *BtnOutFile3;
-	
-	TSpeedButton *BtnArrow;
 	TSpeedButton *BtnAbout;
 	TSpeedButton *BtnTime1;
 	TSpeedButton *BtnTime2;
@@ -65,8 +65,6 @@ __published:
 	
 	TComboBox *TimeInt;
 	TComboBox *Format;
-	
-	TEdit *InFile;
 	TEdit *OutFile1;
 	TEdit *OutFile2;
 	TEdit *OutFile3;
@@ -78,6 +76,20 @@ __published:
 	TEdit *OutFile5;
 	TSpeedButton *BtnOutFileView5;
 	TButton *BtnOutFile5;
+	TCheckBox *OutFileEna6;
+	TEdit *OutFile6;
+	TSpeedButton *BtnOutFileView6;
+	TButton *BtnOutFile6;
+	TComboBox *InFile;
+	TCheckBox *OutDirEna;
+	TEdit *OutDir;
+	TLabel *LabelOutDir;
+	TButton *BtnOutDir;
+	TSpeedButton *BtnKey;
+	TCheckBox *TimeUnitF;
+	TLabel *LabelTimeUnit;
+	TEdit *TimeUnit;
+	TButton *BtnPost;
 	
 	void __fastcall FormCreate          (TObject *Sender);
 	void __fastcall FormShow            (TObject *Sender);
@@ -103,7 +115,7 @@ __published:
 	void __fastcall TimeStartFClick     (TObject *Sender);
 	void __fastcall TimeEndFClick       (TObject *Sender);
 	void __fastcall TimeIntFClick       (TObject *Sender);
-	void __fastcall OutFileEnaClick     (TObject *Sender);
+	void __fastcall OutDirEnaClick     (TObject *Sender);
 	
 	void __fastcall TimeY1UDChangingEx  (TObject *Sender, bool &AllowChange,
           short NewValue, TUpDownDirection Direction);
@@ -116,23 +128,44 @@ __published:
 	void __fastcall InFileChange(TObject *Sender);
 	void __fastcall BtnOutFileView5Click(TObject *Sender);
 	void __fastcall BtnOutFile5Click(TObject *Sender);
+	void __fastcall FormatChange(TObject *Sender);
+	void __fastcall BtnOutFileView6Click(TObject *Sender);
+	void __fastcall BtnOutFile6Click(TObject *Sender);
+	void __fastcall OutDirChange(TObject *Sender);
+	void __fastcall BtnOutDirClick(TObject *Sender);
+	void __fastcall BtnKeyClick(TObject *Sender);
+	void __fastcall BtnPostClick(TObject *Sender);
+	
 private:
+	AnsiString IniFile,CmdPostExe;
+	
 	void __fastcall DropFiles(TWMDropFiles msg); // for files drop
+	
+	TStringList * __fastcall ReadList(TIniFile *ini, AnsiString cat,
+		AnsiString key);
+	void __fastcall WriteList(TIniFile *ini, AnsiString cat,
+		AnsiString key, TStrings *list);
+	void __fastcall AddHist(TComboBox *combo);
 	
 	void __fastcall ConvertFile(void);
 	void __fastcall SetOutFiles(AnsiString infile);
 	void __fastcall UpdateEnable(void);
-	void __fastcall GetTime(gtime_t *ts, gtime_t *te, double *tint);
+	void __fastcall GetTime(gtime_t *ts, gtime_t *te, double *tint, double *tunit);
 	int  __fastcall ExecCmd(AnsiString cmd);
+	AnsiString __fastcall RepPath(AnsiString File);
+	void __fastcall LoadOpt(void);
+	void __fastcall SaveOpt(void);
 	
 	BEGIN_MESSAGE_MAP
 	MESSAGE_HANDLER(WM_DROPFILES,TWMDropFiles,DropFiles);
 	END_MESSAGE_MAP(TForm);
+	
 public:
+	gtime_t RnxTime;
 	AnsiString RunBy,Marker,MarkerNo,MarkerType,Name[2],Rec[3],Ant[3];
-	AnsiString Comment[2],RcvOption,ExSats;
+	AnsiString RnxCode,Comment[2],RcvOption,ExSats;
 	double AppPos[3],AntDel[3];
-	int RnxVer,NavSys,ObsType,FreqType,TraceLevel;
+	int RnxVer,RnxFile,NavSys,ObsType,FreqType,TraceLevel,EventEna;
 	
 	__fastcall TMainWindow(TComponent* Owner);
 };

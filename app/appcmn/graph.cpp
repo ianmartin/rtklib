@@ -1,4 +1,6 @@
 //---------------------------------------------------------------------------
+// graph.cpp: graph plot subfunctions
+//---------------------------------------------------------------------------
 #include <vcl.h>
 #include <math.h>
 #pragma hdrstop
@@ -7,10 +9,10 @@
 
 #define MINSIZE		10			// min width/height
 #define MINSCALE	2E-5		// min scale factor (pixel/unit)
-#define MAXSCALE	1E5			// max scale factor (pixel/unit)
+#define MAXSCALE	1E7			// max scale factor (pixel/unit)
 #define SIZEORIGIN	6
 
-//---------------------------------------------------------------------------
+// constructor --------------------------------------------------------------
 TGraph::TGraph(TPaintBox *parent)
 {
 	Parent=parent; X=Y=0; Width=parent->Width; Height=parent->Height;
@@ -28,7 +30,7 @@ TGraph::TGraph(TPaintBox *parent)
 	Color[1]=clGray;			// grid color
 	Color[2]=clBlack;			// title/label color
 }
-//---------------------------------------------------------------------------
+// --------------------------------------------------------------------------
 int TGraph::IsInArea(TPoint &p)
 {
 	return X<=p.x&&p.x<X+Width&&Y<=p.y&&p.y<Y+Height;
@@ -134,10 +136,10 @@ double TGraph::AutoTickTime(double scale)
 {
 	double t[]={0.1,0.2,0.5,1.0,3.0,6.0,12.0,30.0,60.0,300.0,900.0,1800.0,3600.0,
 		7200.0,10800.0,21600.0,43200.0,86400.0,86400.0*2,86400.0*7,86400.0*14,
-		86400.0*35};
+		86400.0*35,86400.0*70};
 	double tick=60.0*scale;
 	for (int i=0;i<sizeof(t)/sizeof(*t);i++) if (tick<=t[i]) return t[i];
-	return 86400.0*70;
+	return 86400.0*140;
 }
 //---------------------------------------------------------------------------
 AnsiString TGraph::NumText(double x, double dx)
@@ -152,7 +154,7 @@ AnsiString TGraph::TimeText(double x, double dx)
     AnsiString s;
     char str[64];
     time2str(gpst2time(Week,x),str,1);
-    int b=dx<86400.0?11:5,w=dx<60.0?(dx<1.0?10:8):5;
+    int b=dx<86400.0?11:(dx<86400.0*30?5:2),w=dx<60.0?(dx<1.0?10:8):5;
     return s.sprintf("%*.*s",w,w,str+b);
 }
 //---------------------------------------------------------------------------
@@ -238,7 +240,6 @@ void TGraph::DrawAxis(int label, int glabel)
 	GetTick(xt,yt);
 	c->Pen->Color=Color[0]; c->Pen->Style=psSolid;
 	c->Brush->Color=Color[0]; c->Brush->Style=bsSolid;
-	c->Rectangle(X,Y,X+Width-1,Y+Height-1);
 	DrawGrid(xt,yt);
 	if (xt/XScale<50.0&&XLPos<=2) xt*=XLPos==5?4.0:2.0;
 	if (yt/YScale<50.0&&YLPos>=3) yt*=2.0;
@@ -257,6 +258,21 @@ void TGraph::RotPoint(TPoint *ps, int n, TPoint pc, int rot, TPoint *pr)
 //---------------------------------------------------------------------------
 void TGraph::DrawMark(TPoint p, int mark, TColor color, int size, int rot)
 {
+	// mark = mark ( 0: dot  (.), 1: circle (o),  2: rect  (#), 3: cross (x)
+	//               4: line (-), 5: plus   (+), 10: arrow (->),
+	//              11: hscale,  12: vscale,     13: compass)
+	// rot  = rotation angle (deg)
+	
+	// if the same mark already drawn, skip it
+	static TPoint p_;
+	static int mark_,size_,rot_;
+	static TColor color_;
+	if (p.x==p_.x&&p.y==p_.y&&mark==mark_&&color==color_&&size==size_&&
+		rot==rot_) {
+		return;
+	}
+	p_=p; mark_=mark; color_=color; size_=size; rot_=rot;
+	
 	TCanvas *c=Parent->Canvas;
 	if (size<1) size=1;
 	int n,s=size/2;
@@ -267,39 +283,57 @@ void TGraph::DrawMark(TPoint p, int mark, TColor color, int size, int rot)
 	TPoint ps[32],pr[32],pd(0,size/2+12),pt;
 	c->Pen->Color=color; c->Pen->Style=psSolid; c->Brush->Color=color;
 	switch (mark) {
-	case 0: c->Brush->Style=bsSolid; c->Ellipse(x1,y1,x2,y2); return; // dot
-	case 1: c->Brush->Style=bsClear; c->Ellipse(x1,y1,x2,y2); return; // circle
-	case 2: c->Brush->Style=bsClear; c->Rectangle(x1,y1,x2,y2); return; // rect
-	case 3: c->Brush->Style=bsClear;
-			c->MoveTo(x1,y1); c->LineTo(x2,y2); // cross
-			c->MoveTo(x1,y2); c->LineTo(x2,y1); return;
-	case 4: n=2; // line
+		case 0: // dot
+			c->Brush->Style=bsSolid;
+			c->Ellipse(x1,y1,x2,y2);
+			return;
+		case 1: // circle
+			c->Brush->Style=bsClear;
+			c->Ellipse(x1,y1,x2,y2);
+			return;
+		case 2: // rectangle
+			c->Brush->Style=bsClear;
+			c->Rectangle(x1,y1,x2,y2);
+			return;
+		case 3: // cross
+			c->Brush->Style=bsClear;
+			c->MoveTo(x1,y1); c->LineTo(x2,y2);
+			c->MoveTo(x1,y2); c->LineTo(x2,y1);
+			return;
+		case 4: // line
+			n=2;
 			ps[0].x=-size/2; ps[0].y=0; ps[1].x=size/2; ps[1].y=0;
 			break;
-	case 5: c->Brush->Style=bsClear;
-			c->MoveTo(x1,p.y); c->LineTo(x2,p.y); // plus
-			c->MoveTo(p.x,y2); c->LineTo(p.x,y1); return;
-	case 10:n=6; // arrow
+		case 5: // plus
+			c->Brush->Style=bsClear;
+			c->MoveTo(x1,p.y); c->LineTo(x2,p.y);
+			c->MoveTo(p.x,y2); c->LineTo(p.x,y1);
+			return;
+		case 10: // arrow
+			n=6;
 			ps[0].x=-size/2; ps[0].y=0; ps[1].x=size/2; ps[1].y=0;
 			for (int i=2;i<n;i++) {
 				ps[i].x=size/2+xs1[i-2]; ps[i].y=ys1[i-2];
 			}
 			break;
-	case 11: case 12: // hscale,vscale
+		case 11: // hscale
+		case 12: // vscale
 			n=6;
 			for (int i=0;i<n;i++) {
 				int x=xs2[i]*size/2,y=ys2[i]*5;
 				ps[i].x=mark==11?x:y; ps[i].y=mark==11?y:x;
 			}
 			break;
-	case 13:n=7; // compass
+		case 13: // compass
+			n=7;
 			for (int i=0;i<n;i++) {
 				ps[i].x=xs3[i]*size/40; ps[i].y=ys3[i]*size/40;
 			}
 			RotPoint(&pd,1,p,rot,&pt);
 			DrawText(pt,"N",color,0,0,rot);
 			break;
-	default:return;
+		default:
+			return;
 	}
 	c->Brush->Style=bsClear;
 	RotPoint(ps,n,p,rot,pr);
@@ -313,10 +347,24 @@ void TGraph::DrawMark(double x, double y, int mark, TColor color, int size,
 	if (ToPoint(x,y,p)) DrawMark(p,mark,color,size,rot);
 }
 //---------------------------------------------------------------------------
+void TGraph::DrawMarks(const double *x, const double *y, const TColor *color,
+					   int n, int mark, int size, int rot)
+{
+	TPoint p,pp;
+	for (int i=0;i<n;i++) {
+		if (!ToPoint(x[i],y[i],p)||(pp.x==p.x&&pp.y==p.y)) continue;
+		DrawMark(p,mark,color[i],size,rot);
+		pp=p;
+	}
+}
+//---------------------------------------------------------------------------
 void TGraph::DrawText(TPoint p, AnsiString str, TColor color, int ha, int va,
 	int rot)
 {
-	// ha=0:cent,1:left,2:right,va=0:cent,1:bottom,2:top,rot=rotation(deg)
+	// ha  = horizontal alignment (0: center, 1: left,   2: right)
+	// va  = vertical alignment   (0: center, 1: bottom, 2: top  )
+	// rot = rotation angle (deg)
+
 	TCanvas *c=Parent->Canvas;
 	LOGFONT lf={0};
 	lf.lfHeight=c->Font->Height;
@@ -361,7 +409,9 @@ void TGraph::DrawCircle(double x, double y, TColor color, double rx,
 //---------------------------------------------------------------------------
 int TGraph::OnAxis(TPoint p)
 {
-	// area code : [5 4 6; 1 0 2; 9 8 10];
+	// area code :  5  4  6
+	//              1  0  2
+	//              9  8 10
 	int xmin=X,xmax=X+Width-1,ymin=Y,ymax=Y+Height-1;
 	return (p.x<xmin?1:(p.x<=xmax?0:2))+(p.y<ymin?4:(p.y<=ymax?0:8));
 }
@@ -388,6 +438,14 @@ int TGraph::ClipPoint(TPoint *p0, int area, TPoint *p1)
 	return 0;
 }
 //---------------------------------------------------------------------------
+void TGraph::DrawPolyline(TPoint *p, int n)
+{
+	// avoid overflow of points
+	for (int i=0;i<n-1;i+=30000,p+=30000) {
+		Parent->Canvas->Polyline(p,n-i>30000?30000:n-i-1);
+	}
+}
+//---------------------------------------------------------------------------
 void TGraph::DrawPoly(TPoint *p, int n, TColor color, int style)
 {
 	TCanvas *c=Parent->Canvas;
@@ -396,21 +454,25 @@ void TGraph::DrawPoly(TPoint *p, int n, TColor color, int style)
 	int i,j,area0=11,area1;
 	for (i=j=0;j<n;j++,area0=area1) {
 		if ((area1=OnAxis(p[j]))==area0) continue;
-		if (!area1) i=j; else if (!area0) c->Polyline(p+i,j-i-1);
+		if (!area1) i=j; else if (!area0) DrawPolyline(p+i,j-i);
 		if (j<=0||(area0&area1)) continue;
 		TPoint pc[2]={p[j-1],p[j]};
 		if (area0&&!ClipPoint(pc,  area0,p+j  )) continue;
 		if (area1&&!ClipPoint(pc+1,area1,p+j-1)) continue;
-		c->Polyline(pc,1);
+		DrawPolyline(pc,2);
 	}
-	if (!area0) c->Polyline(p+i,j-i-1);
+	if (!area0) DrawPolyline(p+i,j-i);
 }
 //---------------------------------------------------------------------------
 void TGraph::DrawPoly(double *x, double *y, int n, TColor color, int style)
 {
 	TPoint *p=new TPoint[n];
-	for (int i=0;i<n;i++) ToPoint(x[i],y[i],p[i]);
-	DrawPoly(p,n,color,style);
+	int m=0;
+	for (int i=0;i<n;i++) {
+		ToPoint(x[i],y[i],p[m]);
+		if (m==0||p[m-1].x!=p[m].x||p[m-1].y!=p[m].y) m++;
+	}
+	DrawPoly(p,m,color,style);
 	delete [] p;
 }
 //---------------------------------------------------------------------------

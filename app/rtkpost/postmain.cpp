@@ -1,13 +1,30 @@
 //---------------------------------------------------------------------------
-// rtkpost : post processing positioning ap
+// rtkpost : post-processing analysis
 //
-//          Copyright (C) 2007-2010 by T.TAKASU, All rights reserved.
+//          Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
+//
+// options : rtkpost [-t title][-i file][-r file][-b file][-n file ...]
+//                   [-d dir][-o file]
+//                   [-ts y/m/d h:m:s][-te y/m/d h:m:s][-ti tint][-tu tunit]
+//
+//           -t title   window title
+//           -i file    ini file path
+//           -r file    rinex obs rover file
+//           -b file    rinex obs base station file
+//           -n file    rinex nav/clk, sp3, ionex or sp3 file
+//           -d dir     output directory
+//           -o file    output file
+//           -ts y/m/d h:m:s time start
+//           -te y/m/d h:m:s time end
+//           -ti tint   time interval (s)
+//           -tu tunit  time unit (hr)
 //
 // version : $Revision: 1.1 $ $Date: 2008/07/17 22:14:45 $
 // history : 2008/07/14  1.0 new
 //           2008/11/17  1.1 rtklib 2.1.1
 //           2008/04/03  1.2 rtklib 2.3.1
 //           2010/07/18  1.3 rtklib 2.4.0
+//           2010/09/07  1.3 rtklib 2.4.1
 //---------------------------------------------------------------------------
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,9 +40,10 @@
 #include "refdlg.h"
 #include "timedlg.h"
 #include "confdlg.h"
+#include "keydlg.h"
 #include "aboutdlg.h"
 #include "viewer.h"
-//---------------------------------------------------------------------------
+
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 
@@ -37,14 +55,15 @@ TMainForm *MainForm;
 
 static const char version[]="$Revision: 1.1 $ $Date: 2008/07/17 22:14:45 $";
 
-//---------------------------------------------------------------------------
-extern "C" {
-static gtime_t tstart_={0};
-static gtime_t tend_  ={0};
-static char rov_ [256]="";
-static char base_[256]="";
+// global variables ---------------------------------------------------------
+static gtime_t tstart_={0};         // time start for progress-bar
+static gtime_t tend_  ={0};         // time end for progress-bar
+static char rov_ [256]="";          // rover name
+static char base_[256]="";          // base-station name
 
-//---------------------------------------------------------------------------
+extern "C" {
+
+// show message in message area ---------------------------------------------
 extern int showmsg(char *format, ...)
 {
     va_list arg;
@@ -58,13 +77,13 @@ extern int showmsg(char *format, ...)
     else Application->ProcessMessages();
     return !MainForm->BtnExec->Enabled;
 }
-//---------------------------------------------------------------------------
+// set time span of progress bar --------------------------------------------
 extern void settspan(gtime_t ts, gtime_t te)
 {
     tstart_=ts;
     tend_  =te;
 }
-//---------------------------------------------------------------------------
+// set current time to show progress ----------------------------------------
 extern void settime(gtime_t time)
 {
     static int i=0;
@@ -74,27 +93,29 @@ extern void settime(gtime_t time)
     }
     if (i++%23==0) Application->ProcessMessages();
 }
-}
-//---------------------------------------------------------------------------
+
+} // extern "C"
+
+// convert string to double -------------------------------------------------
 static double str2dbl(AnsiString str)
 {
     double val=0.0;
     sscanf(str.c_str(),"%lf",&val);
     return val;
 }
-//---------------------------------------------------------------------------
-// TMainForm: event handling
-//---------------------------------------------------------------------------
+// constructor --------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
     : TForm(Owner)
 {
     int i;
     
+    IniFile="rtkpost.ini";
+    
     DynamicModel=IonoOpt=TropOpt=RovAntPcv=RefAntPcv=AmbRes=0;
     RovPosType=RefPosType=0;
     OutCntResetAmb=5; LockCntFixAmb=5; FixCntHoldAmb=10;
-    MaxAgeDiff=30.0; RejectThres=30.0;
-    MeasErr1=100.0; MeasErr2=0.004; MeasErr3=0.003; MeasErr4=1.0;
+    MaxAgeDiff=30.0; RejectThres=30.0; RejectGdop=30.0;
+    MeasErrR1=MeasErrR2=100.0; MeasErr2=0.004; MeasErr3=0.003; MeasErr4=1.0;
     SatClkStab=1E-11; ValidThresAR=3.0;
     RovAntE=RovAntN=RovAntU=RefAntE=RefAntN=RefAntU=0.0;
     for (i=0;i<3;i++) RovPos[i]=0.0;
@@ -102,25 +123,83 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     
     DoubleBuffered=true;
 }
-//---------------------------------------------------------------------------
+// callback on form create --------------------------------------------------
 void __fastcall TMainForm::FormCreate(TObject *Sender)
 {
-    DragAcceptFiles(Handle,true);
+    AnsiString s;
+    
+    Caption=s.sprintf("%s ver.%s",PRGNAME,VER_RTKLIB);
+    
+    ::DragAcceptFiles(Handle,true);
 }
-//---------------------------------------------------------------------------
+// callback on form show ----------------------------------------------------
 void __fastcall TMainForm::FormShow(TObject *Sender)
 {
-    AnsiString s;
+    TComboBox *ifile[]={InputFile3,InputFile4,InputFile5};
+    char *p,*argv[32],buff[1024];
+    int argc=0,n=0,inputflag=0;;
+    
+    strcpy(buff,GetCommandLine());
+    
+    for (p=buff;*p&&argc<32;p++) {
+        if (*p==' ') continue;
+        if (*p=='"') {
+            argv[argc++]=p+1;
+            if (!(p=strchr(p+1,'"'))) break;
+        }
+        else {
+            argv[argc++]=p;
+            if (!(p=strchr(p+1,' '))) break;
+        }
+        *p='\0';
+    }
+    for (int i=1;i<argc;i++) { // get ini file option
+        if (!strcmp(argv[i],"-i")&&i+1<argc) IniFile=argv[++i];
+    }
     LoadOpt();
+    
+    for (int i=1;i<argc;i++) {
+        if      (!strcmp(argv[i],"-t")&&i+1<argc) Caption=argv[++i];
+        else if (!strcmp(argv[i],"-r")&&i+1<argc) {
+            InputFile1->Text=argv[++i];
+            inputflag=1;
+        }
+        else if (!strcmp(argv[i],"-b")&&i+1<argc) InputFile2->Text=argv[++i];
+        else if (!strcmp(argv[i],"-d")&&i+1<argc) {
+            OutDirEna->Checked=true;
+            OutDir->Text=argv[++i];
+        }
+        else if (!strcmp(argv[i],"-o")&&i+1<argc) OutputFile->Text=argv[++i];
+        else if (!strcmp(argv[i],"-n")&&i+1<argc) {
+            if (n<3) ifile[n++]->Text=argv[++i];
+        }
+        else if (!strcmp(argv[i],"-ts")&&i+2<argc) {
+            TimeStart->Checked=true;
+            TimeY1->Text=argv[++i]; TimeH1->Text=argv[++i];
+        }
+        else if (!strcmp(argv[i],"-te")&&i+2<argc) {
+            TimeEnd->Checked=true;
+            TimeY2->Text=argv[++i]; TimeH2->Text=argv[++i];
+        }
+        else if (!strcmp(argv[i],"-ti")&&i+1<argc) {
+            TimeIntF->Checked=true;
+            TimeInt->Text=argv[++i];
+        }
+        else if (!strcmp(argv[i],"-tu")&&i+1<argc) {
+            TimeUnitF->Checked=true;
+            TimeUnit->Text=argv[++i];
+        }
+    }
+    if (inputflag) SetOutFile();
+    
     UpdateEnable();
-    Caption=s.sprintf("%s ver.%s",PRGNAME,VER_RTKLIB);
 }
-//---------------------------------------------------------------------------
+// callback on form close ---------------------------------------------------
 void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
     SaveOpt();
 }
-//---------------------------------------------------------------------------
+// callback on drop files ---------------------------------------------------
 void __fastcall TMainForm::DropFiles(TWMDropFiles msg)
 {
     POINT point={0};
@@ -133,10 +212,7 @@ void __fastcall TMainForm::DropFiles(TWMDropFiles msg)
     
     top=Panel1->Top+Panel4->Top;
     if (point.y<=top+InputFile1->Top+InputFile1->Height) {
-        InputFile1->Text=file;
-        if (!(p=strrchr(file,'.'))) p=file+strlen(file);
-        strcpy(p,".pos");
-        OutputFile->Text=file;
+        SetOutFile();
     }
     else if (point.y<=top+InputFile2->Top+InputFile2->Height) {
         InputFile2->Text=file;
@@ -151,31 +227,35 @@ void __fastcall TMainForm::DropFiles(TWMDropFiles msg)
         InputFile5->Text=file;
     }
 }
-//---------------------------------------------------------------------------
+// callback on button-plot --------------------------------------------------
 void __fastcall TMainForm::BtnPlotClick(TObject *Sender)
 {
     AnsiString file=FilePath(OutputFile->Text);
     AnsiString cmd="rtkplot \""+file+"\"";
     if (!ExecCmd(cmd,1)) ShowMsg("error : rtkplot execution");
 }
-//---------------------------------------------------------------------------
+// callback on button-view --------------------------------------------------
 void __fastcall TMainForm::BtnViewClick(TObject *Sender)
 {
     ViewFile(FilePath(OutputFile->Text));
 }
-//---------------------------------------------------------------------------
+// callback on button-to-kml ------------------------------------------------
 void __fastcall TMainForm::BtnToKMLClick(TObject *Sender)
 {
     ConvDialog->Show(); 
     ConvDialog->SetInput(FilePath(OutputFile->Text));
 }
-//---------------------------------------------------------------------------
+// callback on button-options -----------------------------------------------
 void __fastcall TMainForm::BtnOptionClick(TObject *Sender)
 {
+    int format=SolFormat;
     if (OptDialog->ShowModal()!=mrOk) return;
+    if ((format==SOLF_NMEA)!=(SolFormat==SOLF_NMEA)) {
+        SetOutFile();
+    }
     UpdateEnable();
 }
-//---------------------------------------------------------------------------
+// callback on button-execute -----------------------------------------------
 void __fastcall TMainForm::BtnExecClick(TObject *Sender)
 {
     char *p;
@@ -188,7 +268,7 @@ void __fastcall TMainForm::BtnExecClick(TObject *Sender)
         showmsg("error : no rinex obs file (rover)");
         return;
     }
-    if (InputFile2->Text==""&&PosMode>0) {
+    if (InputFile2->Text==""&&PMODE_DGPS<=PosMode&&PosMode<=PMODE_FIXED) {
         showmsg("error : no rinex obs file (base station)");
         return;
     }
@@ -236,17 +316,17 @@ void __fastcall TMainForm::BtnExecClick(TObject *Sender)
     BtnOption->Enabled=true;
     Panel1   ->Enabled=true;
 }
-//---------------------------------------------------------------------------
+// callback on button-abort -------------------------------------------------
 void __fastcall TMainForm::BtnStopClick(TObject *Sender)
 {
     showmsg("abort");
 }
-//---------------------------------------------------------------------------
+// callback on button-exit --------------------------------------------------
 void __fastcall TMainForm::BtnExitClick(TObject *Sender)
 {
     Close();
 }
-//---------------------------------------------------------------------------
+// callback on button-about -------------------------------------------------
 void __fastcall TMainForm::BtnAboutClick(TObject *Sender)
 {
     AnsiString prog=PRGNAME;
@@ -257,72 +337,67 @@ void __fastcall TMainForm::BtnAboutClick(TObject *Sender)
     AboutDialog->IconIndex=1;
     AboutDialog->ShowModal();
 }
-//---------------------------------------------------------------------------
+// callback on button-time-1 ------------------------------------------------
 void __fastcall TMainForm::BtnTime1Click(TObject *Sender)
 {
     TimeDialog->Time=GetTime1();
     TimeDialog->ShowModal();
 }
-//---------------------------------------------------------------------------
+// callback on button-time-2 ------------------------------------------------
 void __fastcall TMainForm::BtnTime2Click(TObject *Sender)
 {
     TimeDialog->Time=GetTime2();
     TimeDialog->ShowModal();
 }
-//---------------------------------------------------------------------------
+// callback on button-inputfile-1 -------------------------------------------
 void __fastcall TMainForm::BtnInputFile1Click(TObject *Sender)
 {
     char file[1024],*p;
     
     OpenDialog->Title="RINEX OBS (Rover) File";
     OpenDialog->FileName="";
-    OpenDialog->FilterIndex=0;
+    OpenDialog->FilterIndex=2;
     if (!OpenDialog->Execute()) return;
     InputFile1->Text=OpenDialog->FileName;
-    
-    strcpy(file,InputFile1->Text.c_str());
-    if (!(p=strrchr(file,'.'))) p=file+strlen(file);
-    strcpy(p,".pos");
-    for (p=file;*p;p++) if (*p=='*') *p='0';
-    OutputFile->Text=file;
+    SetOutFile();
 }
-//---------------------------------------------------------------------------
+// callback on button-inputfile-2 -------------------------------------------
 void __fastcall TMainForm::BtnInputFile2Click(TObject *Sender)
 {
     OpenDialog->Title="RINEX OBS (Base Station) File";
     OpenDialog->FileName="";
-    OpenDialog->FilterIndex=0;
+    OpenDialog->FilterIndex=2;
     if (!OpenDialog->Execute()) return;
     InputFile2->Text=OpenDialog->FileName;
 }
-//---------------------------------------------------------------------------
+// callback on button-inputfile-3 -------------------------------------------
 void __fastcall TMainForm::BtnInputFile3Click(TObject *Sender)
 {
-    OpenDialog->Title="RINEX NAV/GNAV, SP3/RINEX CLK or SBAS Log/EMS File";
+    OpenDialog->Title="RINEX NAV/CLK, SP3, IONEX or SBAS/EMS File";
     OpenDialog->FileName="";
-    OpenDialog->FilterIndex=0;
+    OpenDialog->FilterIndex=3;
     if (!OpenDialog->Execute()) return;
     InputFile3->Text=OpenDialog->FileName;
 }
-//---------------------------------------------------------------------------
+// callback on button-inputfile-4 -------------------------------------------
 void __fastcall TMainForm::BtnInputFile4Click(TObject *Sender)
 {
-    OpenDialog->Title="RINEX NAV/GNAV, SP3/RINEX CLK or SBAS Log/EMS File";
+    OpenDialog->Title="RINEX NAV/CLK, SP3, IONEX or SBAS/EMS File";
     OpenDialog->FileName="";
-    OpenDialog->FilterIndex=0;
+    OpenDialog->FilterIndex=4;
     if (!OpenDialog->Execute()) return;
     InputFile4->Text=OpenDialog->FileName;
 }
-//---------------------------------------------------------------------------
+// callback on button-inputfile-5 -------------------------------------------
 void __fastcall TMainForm::BtnInputFile5Click(TObject *Sender)
 {
-    OpenDialog->Title="RINEX NAV/GNAV, SP3/RINEX CLK or SBAS Log/EMS File";
+    OpenDialog->Title="RINEX NAV/CLK, SP3, IONEX or SBAS/EMS File";
     OpenDialog->FileName="";
-    OpenDialog->FilterIndex=0;
+    OpenDialog->FilterIndex=5;
     if (!OpenDialog->Execute()) return;
     InputFile5->Text=OpenDialog->FileName;
 }
-//---------------------------------------------------------------------------
+// callback on button-outputfile --------------------------------------------
 void __fastcall TMainForm::BtnOutputFileClick(TObject *Sender)
 {
     SaveDialog->Title="Output File";
@@ -330,17 +405,17 @@ void __fastcall TMainForm::BtnOutputFileClick(TObject *Sender)
     if (!SaveDialog->Execute()) return;
     OutputFile->Text=SaveDialog->FileName;
 }
-//---------------------------------------------------------------------------
+// callback on button-inputview-1 -------------------------------------------
 void __fastcall TMainForm::BtnInputView1Click(TObject *Sender)
 {
     ViewFile(FilePath(InputFile1->Text));
 }
-//---------------------------------------------------------------------------
+// callback on button-inputview-2 -------------------------------------------
 void __fastcall TMainForm::BtnInputView2Click(TObject *Sender)
 {
     ViewFile(FilePath(InputFile2->Text));
 }
-//---------------------------------------------------------------------------
+// callback on button-inputview-3 -------------------------------------------
 void __fastcall TMainForm::BtnInputView3Click(TObject *Sender)
 {
     AnsiString file=FilePath(InputFile3->Text);
@@ -353,25 +428,17 @@ void __fastcall TMainForm::BtnInputView3Click(TObject *Sender)
     }
     ViewFile(file);
 }
-//---------------------------------------------------------------------------
+// callback on button-inputview-4 -------------------------------------------
 void __fastcall TMainForm::BtnInputView4Click(TObject *Sender)
 {
-    AnsiString file=FilePath(InputFile4->Text);
-    char f[1024];
-    
-    if (file=="") {
-        file=FilePath(InputFile1->Text);
-        if (!ObsToGnav(file.c_str(),f)) return;
-        file=f;
-    }
-    ViewFile(file);
+    ViewFile(FilePath(InputFile4->Text));
 }
-//---------------------------------------------------------------------------
+// callback on button-inputview-5 -------------------------------------------
 void __fastcall TMainForm::BtnInputView5Click(TObject *Sender)
 {
     ViewFile(FilePath(InputFile5->Text));
 }
-//---------------------------------------------------------------------------
+// callback on button-outputview-1 ------------------------------------------
 void __fastcall TMainForm::BtnOutputView1Click(TObject *Sender)
 {
     AnsiString file=FilePath(OutputFile->Text)+".stat";
@@ -379,7 +446,7 @@ void __fastcall TMainForm::BtnOutputView1Click(TObject *Sender)
     if (fp) fclose(fp); else return;
     ViewFile(file);
 }
-//---------------------------------------------------------------------------
+// callback on button-outputview-2 ------------------------------------------
 void __fastcall TMainForm::BtnOutputView2Click(TObject *Sender)
 {
     AnsiString file=FilePath(OutputFile->Text)+".trace";
@@ -387,69 +454,75 @@ void __fastcall TMainForm::BtnOutputView2Click(TObject *Sender)
     if (fp) fclose(fp); else return;
     ViewFile(file);
 }
-//---------------------------------------------------------------------------
+// callback on button-inputplot-1 -------------------------------------------
 void __fastcall TMainForm::BtnInputPlot1Click(TObject *Sender)
 {
     AnsiString files[5],cmd;
-    char navfile[1024],gnavfile[1024];
+    char navfile[1024];
     
-    files[0]=FilePath(InputFile1->Text);
-    files[1]=FilePath(InputFile2->Text);
+    files[0]=FilePath(InputFile1->Text); /* obs rover */
+    files[1]=FilePath(InputFile2->Text); /* obs base */
     files[2]=FilePath(InputFile3->Text);
     files[3]=FilePath(InputFile4->Text);
+    files[4]=FilePath(InputFile5->Text);
     
     if (files[2]=="") {
         if (ObsToNav(files[0].c_str(),navfile)) files[2]=navfile;
     }
-    if (files[3]=="") {
-        if (ObsToGnav(files[0].c_str(),gnavfile)) files[3]=gnavfile;
-    }
-    cmd="rtkplot -r \""+files[0]+"\" \""+files[2]+"\" \""+files[3]+"\"";
+    cmd="rtkplot -r \""+files[0]+"\" \""+files[2]+"\" \""+files[3]+"\" \""+
+        files[4]+"\"";
     
     if (!ExecCmd(cmd,1)) ShowMsg("error : rtkplot execution");
 }
-//---------------------------------------------------------------------------
+// callback on button-inputplot-2 -------------------------------------------
 void __fastcall TMainForm::BtnInputPlot2Click(TObject *Sender)
 {
     AnsiString files[5],cmd;
     char navfile[1024],gnavfile[1024];
     
-    files[0]=FilePath(InputFile1->Text);
-    files[1]=FilePath(InputFile2->Text);
+    files[0]=FilePath(InputFile1->Text); /* obs rover */
+    files[1]=FilePath(InputFile2->Text); /* obs base */
     files[2]=FilePath(InputFile3->Text);
     files[3]=FilePath(InputFile4->Text);
+    files[4]=FilePath(InputFile5->Text);
     
     if (files[2]=="") {
         if (ObsToNav(files[0].c_str(),navfile)) files[2]=navfile;
     }
-    if (files[3]=="") {
-        if (ObsToGnav(files[0].c_str(),gnavfile)) files[3]=gnavfile;
-    }
-    cmd="rtkplot -r \""+files[1]+"\" \""+files[2]+"\" \""+files[3]+"\"";
+    cmd="rtkplot -r \""+files[1]+"\" \""+files[2]+"\" \""+files[3]+"\" \""+
+        files[4]+"\"";
     
     if (!ExecCmd(cmd,1)) ShowMsg("error : rtkplot execution");
 }
-//---------------------------------------------------------------------------
-void __fastcall TMainForm::RefPosClick(TObject *Sender)
+// callback on button-output-directory --------------------------------------
+void __fastcall TMainForm::BtnOutDirClick(TObject *Sender)
 {
-    UpdateEnable();
+    AnsiString dir=OutDir->Text;
+    if (!SelectDirectory("Output Directory","",dir)) return;
+    OutDir->Text=dir;
 }
-//---------------------------------------------------------------------------
+// callback on button keyword -----------------------------------------------
+void __fastcall TMainForm::BtnKeywordClick(TObject *Sender)
+{
+    KeyDialog->Flag=2;
+    KeyDialog->Show();
+}
+// callback on time-start/end check -----------------------------------------
 void __fastcall TMainForm::TimeStartClick(TObject *Sender)
 {
     UpdateEnable();
 }
-//---------------------------------------------------------------------------
+// callback on time-interval check ------------------------------------------
 void __fastcall TMainForm::TimeIntFClick(TObject *Sender)
 {
     UpdateEnable();
 }
-//---------------------------------------------------------------------------
+// callback on time-unit check ----------------------------------------------
 void __fastcall TMainForm::TimeUnitFClick(TObject *Sender)
 {
     UpdateEnable();
 }
-//---------------------------------------------------------------------------
+// callback on time-ymd-1 updown --------------------------------------------
 void __fastcall TMainForm::TimeY1UDChangingEx(TObject *Sender,
       bool &AllowChange, short NewValue, TUpDownDirection Direction)
 {
@@ -468,7 +541,7 @@ void __fastcall TMainForm::TimeY1UDChangingEx(TObject *Sender,
     TimeY1->Text=s.sprintf("%04.0f/%02.0f/%02.0f",ep[0],ep[1],ep[2]);
     TimeY1->SelStart=p>7||p==0?10:(p>4?7:4);
 }
-//---------------------------------------------------------------------------
+// callback on time-hms-1 updown --------------------------------------------
 void __fastcall TMainForm::TimeH1UDChangingEx(TObject *Sender,
       bool &AllowChange, short NewValue, TUpDownDirection Direction)
 {
@@ -482,7 +555,7 @@ void __fastcall TMainForm::TimeH1UDChangingEx(TObject *Sender,
     TimeH1->Text=s.sprintf("%02d:%02d:%02d",sec/3600,(sec%3600)/60,sec%60);
     TimeH1->SelStart=p>5||p==0?8:(p>2?5:2);
 }
-//---------------------------------------------------------------------------
+// callback on time-ymd-2 updown --------------------------------------------
 void __fastcall TMainForm::TimeY2UDChangingEx(TObject *Sender,
       bool &AllowChange, short NewValue, TUpDownDirection Direction)
 {
@@ -501,7 +574,7 @@ void __fastcall TMainForm::TimeY2UDChangingEx(TObject *Sender,
     TimeY2->Text=s.sprintf("%04.0f/%02.0f/%02.0f",ep[0],ep[1],ep[2]);
     TimeY2->SelStart=p>7||p==0?10:(p>4?7:4);
 }
-//---------------------------------------------------------------------------
+// callback on time-hms-2 updown --------------------------------------------
 void __fastcall TMainForm::TimeH2UDChangingEx(TObject *Sender,
       bool &AllowChange, short NewValue, TUpDownDirection Direction)
 {
@@ -515,37 +588,44 @@ void __fastcall TMainForm::TimeH2UDChangingEx(TObject *Sender,
     TimeH2->Text=s.sprintf("%02d:%02d:%02d",sec/3600,(sec%3600)/60,sec%60);
     TimeH2->SelStart=p>5||p==0?8:(p>2?5:2);
 }
-
-//---------------------------------------------------------------------------
+// callback on inputfile-1 change -------------------------------------------
 void __fastcall TMainForm::InputFile1Change(TObject *Sender)
 {
-    char *p,file[1024];
+    SetOutFile();
+}
+// callback on output-directory checked -------------------------------------
+void __fastcall TMainForm::OutDirEnaClick(TObject *Sender)
+{
+	UpdateEnable();
+    SetOutFile();
+}
+// callback on output-directory change --------------------------------------
+void __fastcall TMainForm::OutDirChange(TObject *Sender)
+{
+    SetOutFile();
+}
+// set output file path -----------------------------------------------------
+void __fastcall TMainForm::SetOutFile(void)
+{
+    char *p,ofile[1024],ifile[1024];
     
     if (InputFile1->Text=="") return;
-    strcpy(file,InputFile1->Text.c_str());
-    if (!(p=strrchr(file,'.'))) p=file+strlen(file);
-    strcpy(p,".pos");
-    for (p=file;*p;p++) if (*p=='*') *p='0';
-    OutputFile->Text=file;
+    
+    strcpy(ifile,InputFile1->Text.c_str());
+    
+    if (OutDirEna->Checked) {
+        if ((p=strrchr(ifile,'\\'))) p++; else p=ifile;
+        sprintf(ofile,"%s\\%s",OutDir->Text.c_str(),p);
+    }
+    else {
+        strcpy(ofile,ifile);
+    }
+    if (!(p=strrchr(ofile,'.'))) p=ofile+strlen(ofile);
+    strcpy(p,SolFormat==SOLF_NMEA?".nmea":".pos");
+    for (p=ofile;*p;p++) if (*p=='*') *p='0';
+    OutputFile->Text=ofile;
 }
-//---------------------------------------------------------------------------
-void __fastcall TMainForm::PosModeChange(TObject *Sender)
-{
-    UpdateEnable();
-}
-//---------------------------------------------------------------------------
-void __fastcall TMainForm::SolutionChange(TObject *Sender)
-{
-    UpdateEnable();
-}
-//---------------------------------------------------------------------------
-void __fastcall TMainForm::SolFormatChange(TObject *Sender)
-{
-    UpdateEnable();
-}
-//---------------------------------------------------------------------------
-// TMainForm: command execution
-//---------------------------------------------------------------------------
+// execute post-processing --------------------------------------------------
 int __fastcall TMainForm::ExecProc(void)
 {
     FILE *fp;
@@ -584,10 +664,6 @@ int __fastcall TMainForm::ExecProc(void)
     if (InputFile4->Text!="") {
         strcpy(infile[n++],InputFile4->Text.c_str());
     }
-    else if ((prcopt.navsys&SYS_GLO)&&!ObsToGnav(InputFile1->Text.c_str(),infile[n++])) {
-        showmsg("error: no glonass navigation data");
-        return 0;
-    }
     if (InputFile5->Text!="") {
         strcpy(infile[n++],InputFile5->Text.c_str());
     }
@@ -625,6 +701,9 @@ int __fastcall TMainForm::ExecProc(void)
             strcpy(r++," ");
         }
     }
+    Progress->Position=0;
+    showmsg("reading...");
+    
     // post processing positioning
     if ((stat=postpos(ts,te,ti,tu,&prcopt,&solopt,&filopt,infile,n,outfile,
                       rov,base))==1) {
@@ -635,12 +714,12 @@ int __fastcall TMainForm::ExecProc(void)
     
     return stat;
 }
-//---------------------------------------------------------------------------
+// get processing and solution options --------------------------------------
 int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
                                     filopt_t &filopt)
 {
     char buff[1024],id[32],*p;
-    int sat;
+    int sat,ex;
     
     // processing options
     prcopt.mode     =PosMode;
@@ -661,7 +740,9 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
     prcopt.tidecorr =TideCorr;
     prcopt.niter    =NumIter;
     prcopt.intpref  =IntpRefObs;
-    prcopt.err[0]   =MeasErr1;
+    prcopt.sbassatsel=SbasSat;
+    prcopt.eratio[0]=MeasErrR1;
+    prcopt.eratio[1]=MeasErrR2;
     prcopt.err[1]   =MeasErr2;
     prcopt.err[2]   =MeasErr3;
     prcopt.err[3]   =MeasErr4;
@@ -674,8 +755,10 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
     prcopt.sclkstab =SatClkStab;
     prcopt.thresar  =ValidThresAR;
     prcopt.elmaskar =ElMaskAR*D2R;
+    prcopt.elmaskhold=ElMaskHold*D2R;
     prcopt.thresslip=SlipThres;
     prcopt.maxtdiff =MaxAgeDiff;
+    prcopt.maxgdop  =RejectGdop;
     prcopt.maxinno  =RejectThres;
     if (BaseLineConst) {
         prcopt.baseline[0]=BaseLine[0];
@@ -685,7 +768,7 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
         prcopt.baseline[0]=0.0;
         prcopt.baseline[1]=0.0;
     }
-    if (PosMode!=PMODE_FIXED) {
+    if (PosMode!=PMODE_FIXED&&PosMode!=PMODE_PPP_FIXED) {
         for (int i=0;i<3;i++) prcopt.ru[i]=0.0;
     }
     else if (RovPosType<=2) {
@@ -716,8 +799,9 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
     if (ExSats!="") { // excluded satellites
         strcpy(buff,ExSats.c_str());
         for (p=strtok(buff," ");p;p=strtok(NULL," ")) {
+            if (*p=='+') {ex=2; p++;} else ex=1;
             if (!(sat=satid2no(p))) continue;
-            prcopt.exsats[sat-1]=1;
+            prcopt.exsats[sat-1]=ex;
         }
     }
     // solution options
@@ -742,53 +826,32 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
     strcpy(filopt.rcvantp,AntPcvFile.c_str());
     strcpy(filopt.stapos, StaPosFile.c_str());
     strcpy(filopt.geoid,  GeoidDataFile.c_str());
+    strcpy(filopt.iono,   IonoFile.c_str());
     strcpy(filopt.dcb,    DCBFile.c_str());
     
     return 1;
 }
-//---------------------------------------------------------------------------
-// TMainForm: common functions
-//---------------------------------------------------------------------------
+// observation file to nav file ---------------------------------------------
 int __fastcall TMainForm::ObsToNav(const char *obsfile, char *navfile)
 {
     char *p;
     strcpy(navfile,obsfile);
     if (!(p=strrchr(navfile,'.'))) return 0;
-    if      (strlen(p)==4&&*(p+3)=='o') *(p+3)='n';
-    else if (strlen(p)==4&&*(p+3)=='d') *(p+3)='n';
-    else if (strlen(p)==4&&*(p+3)=='O') *(p+3)='N';
-    else if (!strcmp(p,".obs")) strcpy(p,".nav");
-    else if (!strcmp(p,".OBS")) strcpy(p,".NAV");
+    if      (strlen(p)==4&&*(p+3)=='o') *(p+3)='*';
+    else if (strlen(p)==4&&*(p+3)=='d') *(p+3)='*';
+    else if (strlen(p)==4&&*(p+3)=='O') *(p+3)='*';
+    else if (!strcmp(p,".obs")) strcpy(p,".*nav");
+    else if (!strcmp(p,".OBS")) strcpy(p,".*NAV");
     else if (!strcmp(p,".gz")||!strcmp(p,".Z")) {
-        if      (*(p-1)=='o') *(p-1)='n';
-        else if (*(p-1)=='d') *(p-1)='n';
-        else if (*(p-1)=='O') *(p-1)='N';
+        if      (*(p-1)=='o') *(p-1)='*';
+        else if (*(p-1)=='d') *(p-1)='*';
+        else if (*(p-1)=='O') *(p-1)='*';
         else return 0;
     }
     else return 0;
     return 1;
 }
-//---------------------------------------------------------------------------
-int __fastcall TMainForm::ObsToGnav(const char *obsfile, char *gnavfile)
-{
-    char *p;
-    strcpy(gnavfile,obsfile);
-    if (!(p=strrchr(gnavfile,'.'))) return 0;
-    if      (strlen(p)==4&&*(p+3)=='o') *(p+3)='g';
-    else if (strlen(p)==4&&*(p+3)=='d') *(p+3)='g';
-    else if (strlen(p)==4&&*(p+3)=='O') *(p+3)='G';
-    else if (!strcmp(p,".obs")) strcpy(p,".gnav");
-    else if (!strcmp(p,".OBS")) strcpy(p,".GNAV");
-    else if (!strcmp(p,".gz")||!strcmp(p,".Z")) {
-        if      (*(p-1)=='o') *(p-1)='g';
-        else if (*(p-1)=='d') *(p-1)='g';
-        else if (*(p-1)=='O') *(p-1)='G';
-        else return 0;
-    }
-    else return 0;
-    return 1;
-}
-//---------------------------------------------------------------------------
+// replace file path with keywords ------------------------------------------
 AnsiString __fastcall TMainForm::FilePath(AnsiString file)
 {
     AnsiString s;
@@ -811,7 +874,7 @@ AnsiString __fastcall TMainForm::FilePath(AnsiString file)
     
     return (s=path);
 }
-//---------------------------------------------------------------------------
+// read history -------------------------------------------------------------
 TStringList * __fastcall TMainForm::ReadList(TIniFile *ini, AnsiString cat,
     AnsiString key)
 {
@@ -825,7 +888,7 @@ TStringList * __fastcall TMainForm::ReadList(TIniFile *ini, AnsiString cat,
     }
     return list;
 }
-//---------------------------------------------------------------------------
+// write history ------------------------------------------------------------
 void __fastcall TMainForm::WriteList(TIniFile *ini, AnsiString cat,
     AnsiString key, TStrings *list)
 {
@@ -836,7 +899,7 @@ void __fastcall TMainForm::WriteList(TIniFile *ini, AnsiString cat,
         ini->WriteString(cat,s.sprintf("%s_%03d",key.c_str(),i),list->Strings[i]);
     }
 }
-//---------------------------------------------------------------------------
+// add history --------------------------------------------------------------
 void __fastcall TMainForm::AddHist(TComboBox *combo)
 {
     AnsiString hist=combo->Text;
@@ -848,7 +911,7 @@ void __fastcall TMainForm::AddHist(TComboBox *combo)
     for (int i=list->Count-1;i>=MAXHIST;i--) list->Delete(i);
     combo->ItemIndex=0;
 }
-//---------------------------------------------------------------------------
+// execute command ----------------------------------------------------------
 int __fastcall TMainForm::ExecCmd(AnsiString cmd, int show)
 {
     PROCESS_INFORMATION info;
@@ -862,7 +925,7 @@ int __fastcall TMainForm::ExecCmd(AnsiString cmd, int show)
     CloseHandle(info.hThread);
     return 1;
 }
-//---------------------------------------------------------------------------
+// view file ----------------------------------------------------------------
 void __fastcall TMainForm::ViewFile(AnsiString file)
 {
     TTextViewer *viewer;
@@ -880,13 +943,12 @@ void __fastcall TMainForm::ViewFile(AnsiString file)
     viewer->Read(f);
     if (cstat==1) remove(tmpfile);
 }
-//---------------------------------------------------------------------------
+// show message in message area ---------------------------------------------
 void __fastcall TMainForm::ShowMsg(char *msg)
 {
     Message->Caption=msg;
-    Message->Font->Color=strstr(msg,"error")?clRed:clGray;
 }
-//---------------------------------------------------------------------------
+// get time from time-1 -----------------------------------------------------
 gtime_t _fastcall TMainForm::GetTime1(void)
 {
     double ep[]={2000,1,1,0,0,0};
@@ -895,7 +957,7 @@ gtime_t _fastcall TMainForm::GetTime1(void)
     sscanf(TimeH1->Text.c_str(),"%lf:%lf:%lf",ep+3,ep+4,ep+5);
     return epoch2time(ep);
 }
-//---------------------------------------------------------------------------
+// get time from time-2 -----------------------------------------------------
 gtime_t _fastcall TMainForm::GetTime2(void)
 {
     double ep[]={2000,1,1,0,0,0};
@@ -904,7 +966,7 @@ gtime_t _fastcall TMainForm::GetTime2(void)
     sscanf(TimeH2->Text.c_str(),"%lf:%lf:%lf",ep+3,ep+4,ep+5);
     return epoch2time(ep);
 }
-//---------------------------------------------------------------------------
+// set time to time-1 -------------------------------------------------------
 void _fastcall TMainForm::SetTime1(gtime_t time)
 {
     AnsiString s;
@@ -915,7 +977,7 @@ void _fastcall TMainForm::SetTime1(gtime_t time)
     TimeH1->Text=s.sprintf("%02.0f:%02.0f:%02.0f",ep[3],ep[4],ep[5]);
     TimeY1->SelStart=10; TimeH1->SelStart=10;
 }
-//---------------------------------------------------------------------------
+// set time to time-2 -------------------------------------------------------
 void _fastcall TMainForm::SetTime2(gtime_t time)
 {
     AnsiString s;
@@ -926,11 +988,12 @@ void _fastcall TMainForm::SetTime2(gtime_t time)
     TimeH2->Text=s.sprintf("%02.0f:%02.0f:%02.0f",ep[3],ep[4],ep[5]);
     TimeY2->SelStart=10; TimeH2->SelStart=10;
 }
-//---------------------------------------------------------------------------
+// update enable/disable of widgets -----------------------------------------
 void __fastcall TMainForm::UpdateEnable(void)
 {
     int moder=PMODE_DGPS<=PosMode&&PosMode<=PMODE_FIXED;
     
+    LabelInputFile1->Caption=moder?"RINEX OBS: Rover":"RINEX OBS";
     InputFile2     ->Enabled=moder;
     BtnInputFile2  ->Enabled=moder;
     BtnInputPlot2  ->Enabled=moder;
@@ -953,11 +1016,14 @@ void __fastcall TMainForm::UpdateEnable(void)
     TimeUnitF      ->Enabled=TimeStart->Checked&&TimeEnd  ->Checked;
     TimeUnit       ->Enabled=TimeUnitF->Enabled&&TimeUnitF->Checked;
     LabelTimeUnit  ->Enabled=TimeUnitF->Enabled&&TimeUnitF->Checked;
+    OutDir         ->Enabled=OutDirEna->Checked;
+    BtnOutDir      ->Enabled=OutDirEna->Checked;
+    LabelOutDir    ->Enabled=OutDirEna->Checked;
 }
-//---------------------------------------------------------------------------
+// load options from ini file -----------------------------------------------
 void __fastcall TMainForm::LoadOpt(void)
 {
-    TIniFile *ini=new TIniFile("rtkpost.ini");
+    TIniFile *ini=new TIniFile(IniFile);
     AnsiString s;
     char *p;
     
@@ -977,6 +1043,8 @@ void __fastcall TMainForm::LoadOpt(void)
     InputFile3->Text   =ini->ReadString ("set","inputfile3",  "");
     InputFile4->Text   =ini->ReadString ("set","inputfile4",  "");
     InputFile5->Text   =ini->ReadString ("set","inputfile5",  "");
+    OutDirEna->Checked =ini->ReadInteger("set","outputdirena", 0);
+    OutDir->Text       =ini->ReadString ("set","outputdir",   "");
     OutputFile->Text   =ini->ReadString ("set","outputfile",  "");
     
     InputFile1->Items  =ReadList(ini,"hist","inputfile1");
@@ -1006,10 +1074,12 @@ void __fastcall TMainForm::LoadOpt(void)
     LockCntFixAmb      =ini->ReadInteger("opt","lockcntfixamb",  0);
     FixCntHoldAmb      =ini->ReadInteger("opt","fixcntholdamb", 10);
     ElMaskAR           =ini->ReadFloat  ("opt","elmaskar",     0.0);
+    ElMaskHold         =ini->ReadFloat  ("opt","elmaskhold",   0.0);
     OutCntResetAmb     =ini->ReadInteger("opt","outcntresetbias",5);
     SlipThres          =ini->ReadFloat  ("opt","slipthres",   0.05);
     MaxAgeDiff         =ini->ReadFloat  ("opt","maxagediff",  30.0);
     RejectThres        =ini->ReadFloat  ("opt","rejectthres", 30.0);
+    RejectGdop         =ini->ReadFloat  ("opt","rejectgdop",  30.0);
     NumIter            =ini->ReadInteger("opt","numiter",        1);
     CodeSmooth         =ini->ReadInteger("opt","codesmooth",     0);
     BaseLine[0]        =ini->ReadFloat  ("opt","baselinelen",  0.0);
@@ -1030,7 +1100,8 @@ void __fastcall TMainForm::LoadOpt(void)
     DebugTrace         =ini->ReadInteger("opt","debugtrace",     0);
     DebugStatus        =ini->ReadInteger("opt","debugstatus",    0);
     
-    MeasErr1           =ini->ReadFloat  ("opt","measerr1",   100.0);
+    MeasErrR1          =ini->ReadFloat  ("opt","measeratio1",100.0);
+    MeasErrR2          =ini->ReadFloat  ("opt","measeratio2",100.0);
     MeasErr2           =ini->ReadFloat  ("opt","measerr2",   0.003);
     MeasErr3           =ini->ReadFloat  ("opt","measerr3",   0.003);
     MeasErr4           =ini->ReadFloat  ("opt","measerr4",   0.000);
@@ -1063,6 +1134,7 @@ void __fastcall TMainForm::LoadOpt(void)
     
     AntPcvFile         =ini->ReadString ("opt","antpcvfile",    "");
     IntpRefObs         =ini->ReadInteger("opt","intprefobs",     0);
+    SbasSat            =ini->ReadInteger("opt","sbassat",        0);
     NetRSCorr          =ini->ReadInteger("opt","netrscorr",      0);
     SatClkCorr         =ini->ReadInteger("opt","satclkcorr",     0);
     SbasCorr           =ini->ReadInteger("opt","sbascorr",       0);
@@ -1075,14 +1147,21 @@ void __fastcall TMainForm::LoadOpt(void)
     SatPcvFile         =ini->ReadString ("opt","satpcvfile",    "");
     StaPosFile         =ini->ReadString ("opt","staposfile",    "");
     GeoidDataFile      =ini->ReadString ("opt","geoiddatafile", "");
+    IonoFile           =ini->ReadString ("opt","ionofile",      "");
     DCBFile            =ini->ReadString ("opt","dcbfile",       "");
     GoogleEarthFile    =ini->ReadString ("opt","googleearthfile",GOOGLE_EARTH);
     
-    RovList            =ini->ReadString ("opt","rovlist",       "");
+    RovList="";
+    for (int i=0;i<10;i++) {
+        RovList +=ini->ReadString("opt",s.sprintf("rovlist%d",i+1),"");
+    }
+    BaseList="";
+    for (int i=0;i<10;i++) {
+        BaseList+=ini->ReadString("opt",s.sprintf("baselist%d",i+1),"");
+    }
     for (p=RovList.c_str();*p;p++) {
         if ((p=strstr(p,"@@"))) strncpy(p,"\r\n",2); else break;
     }
-    BaseList           =ini->ReadString ("opt","baselist",      "");
     for (p=BaseList.c_str();*p;p++) {
         if ((p=strstr(p,"@@"))) strncpy(p,"\r\n",2); else break;
     }
@@ -1110,10 +1189,11 @@ void __fastcall TMainForm::LoadOpt(void)
     TTextViewer::FontD->Size=ini->ReadInteger("viewer","fontsize",9);
     delete ini;
 }
-//---------------------------------------------------------------------------
+// save options to ini file -------------------------------------------------
 void __fastcall TMainForm::SaveOpt(void)
 {
-    TIniFile *ini=new TIniFile("rtkpost.ini");
+    TIniFile *ini=new TIniFile(IniFile);
+    AnsiString s;
     char *p;
     
     ini->WriteInteger("set","timestart",   TimeStart ->Checked?1:0);
@@ -1131,6 +1211,8 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteString ("set","inputfile3",  InputFile3->Text);
     ini->WriteString ("set","inputfile4",  InputFile4->Text);
     ini->WriteString ("set","inputfile5",  InputFile5->Text);
+    ini->WriteInteger("set","outputdirena",OutDirEna ->Checked);
+    ini->WriteString ("set","outputdir",   OutDir    ->Text);
     ini->WriteString ("set","outputfile",  OutputFile->Text);
     
     WriteList(ini,"hist","inputfile1",     InputFile1->Items);
@@ -1160,9 +1242,11 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteInteger("opt","lockcntfixamb",LockCntFixAmb);
     ini->WriteInteger("opt","fixcntholdamb",FixCntHoldAmb);
     ini->WriteFloat  ("opt","elmaskar",    ElMaskAR    );
+    ini->WriteFloat  ("opt","elmaskhold",  ElMaskHold  );
     ini->WriteInteger("opt","outcntresetbias",OutCntResetAmb);
     ini->WriteFloat  ("opt","slipthres",   SlipThres   );
     ini->WriteFloat  ("opt","maxagediff",  MaxAgeDiff  );
+    ini->WriteFloat  ("opt","rejectgdop",  RejectGdop  );
     ini->WriteFloat  ("opt","rejectthres", RejectThres );
     ini->WriteInteger("opt","numiter",     NumIter     );
     ini->WriteInteger("opt","codesmooth",  CodeSmooth  );
@@ -1184,7 +1268,8 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteInteger("opt","debugtrace",  DebugTrace  );
     ini->WriteInteger("opt","debugstatus", DebugStatus );
     
-    ini->WriteFloat  ("opt","measerr1",    MeasErr1    );
+    ini->WriteFloat  ("opt","measeratio1", MeasErrR1   );
+    ini->WriteFloat  ("opt","measeratio2", MeasErrR2   );
     ini->WriteFloat  ("opt","measerr2",    MeasErr2    );
     ini->WriteFloat  ("opt","measerr3",    MeasErr3    );
     ini->WriteFloat  ("opt","measerr4",    MeasErr4    );
@@ -1217,6 +1302,7 @@ void __fastcall TMainForm::SaveOpt(void)
     
     ini->WriteString ("opt","antpcvfile",  AntPcvFile  );
     ini->WriteInteger("opt","intprefobs",  IntpRefObs  );
+    ini->WriteInteger("opt","sbassat",     SbasSat     );
     ini->WriteInteger("opt","netrscorr",   NetRSCorr   );
     ini->WriteInteger("opt","satclkcorr",  SatClkCorr  );
     ini->WriteInteger("opt","sbascorr",    SbasCorr    );
@@ -1229,18 +1315,22 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteString ("opt","satpcvfile",  SatPcvFile  );
     ini->WriteString ("opt","staposfile",  StaPosFile  );
     ini->WriteString ("opt","geoiddatafile",GeoidDataFile);
+    ini->WriteString ("opt","ionofile",    IonoFile     );
     ini->WriteString ("opt","dcbfile",     DCBFile     );
     ini->WriteString ("opt","googleearthfile",GoogleEarthFile);
     
     for (p=RovList.c_str();*p;p++) {
         if ((p=strstr(p,"\r\n"))) strncpy(p,"@@",2); else break;
     }
-    ini->WriteString ("opt","rovlist",     RovList);
-    
+    for (int i=0;i<10;i++) {
+        ini->WriteString("opt",s.sprintf("rovlist%d",i+1),RovList.SubString(i*2000,2000));
+    }
     for (p=BaseList.c_str();*p;p++) {
         if ((p=strstr(p,"\r\n"))) strncpy(p,"@@",2); else break;
     }
-    ini->WriteString ("opt","baselist",    BaseList);
+    for (int i=0;i<10;i++) {
+        ini->WriteString("opt",s.sprintf("baselist%d",i+1),BaseList.SubString(i*2000,2000));
+    }
     
     ini->WriteInteger("conv","timespan",   ConvDialog->TimeSpan  ->Checked  );
     ini->WriteString ("conv","timey1",     ConvDialog->TimeY1    ->Text     );
@@ -1266,3 +1356,4 @@ void __fastcall TMainForm::SaveOpt(void)
     delete ini;
 }
 //---------------------------------------------------------------------------
+

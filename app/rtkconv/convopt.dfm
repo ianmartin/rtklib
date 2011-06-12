@@ -30,19 +30,26 @@ object ConvOptDialog: TConvOptDialog
     Height = 13
     Caption = 'Option'
   end
-  object Label9: TLabel
-    Left = 8
-    Top = 8
-    Width = 105
-    Height = 13
-    Caption = 'Output RINEX Version'
-  end
   object Label11: TLabel
     Left = 324
     Top = 210
     Width = 89
     Height = 13
     Caption = 'Excluded Satellites'
+  end
+  object Label9: TLabel
+    Left = 10
+    Top = 7
+    Width = 68
+    Height = 13
+    Caption = 'RINEX Version'
+  end
+  object Label12: TLabel
+    Left = 172
+    Top = 7
+    Width = 48
+    Height = 13
+    Caption = 'Station ID'
   end
   object BtnOk: TButton
     Left = 256
@@ -66,10 +73,10 @@ object ConvOptDialog: TConvOptDialog
   end
   object GroupBox1: TGroupBox
     Left = 2
-    Top = 20
+    Top = 22
     Width = 417
     Height = 189
-    TabOrder = 3
+    TabOrder = 5
     object Label1: TLabel
       Left = 8
       Top = 78
@@ -272,7 +279,7 @@ object ConvOptDialog: TConvOptDialog
     Width = 161
     Height = 35
     Caption = 'Observation Types'
-    TabOrder = 5
+    TabOrder = 7
     object Obs2: TCheckBox
       Left = 48
       Top = 14
@@ -322,7 +329,7 @@ object ConvOptDialog: TConvOptDialog
     Style = csDropDownList
     ItemHeight = 13
     ItemIndex = 0
-    TabOrder = 8
+    TabOrder = 10
     Text = 'OFF'
     Items.Strings = (
       'OFF'
@@ -337,7 +344,7 @@ object ConvOptDialog: TConvOptDialog
     Top = 280
     Width = 83
     Height = 21
-    TabOrder = 7
+    TabOrder = 9
   end
   object GroupBox2: TGroupBox
     Left = 2
@@ -345,7 +352,7 @@ object ConvOptDialog: TConvOptDialog
     Width = 317
     Height = 35
     Caption = 'Satellite Systems'
-    TabOrder = 4
+    TabOrder = 6
     object Nav1: TCheckBox
       Left = 10
       Top = 14
@@ -403,7 +410,7 @@ object ConvOptDialog: TConvOptDialog
     Width = 251
     Height = 35
     Caption = 'Frequencies'
-    TabOrder = 6
+    TabOrder = 8
     object Freq1: TCheckBox
       Left = 10
       Top = 14
@@ -437,7 +444,7 @@ object ConvOptDialog: TConvOptDialog
       Top = 14
       Width = 45
       Height = 17
-      Caption = 'L7'
+      Caption = 'L6'
       TabOrder = 3
     end
     object Freq5: TCheckBox
@@ -445,7 +452,7 @@ object ConvOptDialog: TConvOptDialog
       Top = 14
       Width = 39
       Height = 17
-      Caption = 'L6'
+      Caption = 'L7'
       TabOrder = 4
     end
     object Freq6: TCheckBox
@@ -457,20 +464,37 @@ object ConvOptDialog: TConvOptDialog
       TabOrder = 5
     end
   end
-  object RnxVer: TComboBox
-    Left = 128
-    Top = 2
-    Width = 95
-    Height = 21
-    Style = csDropDownList
-    ItemHeight = 13
-    TabOrder = 2
-  end
   object ExSats: TEdit
     Left = 320
     Top = 224
     Width = 97
     Height = 21
-    TabOrder = 9
+    TabOrder = 11
+  end
+  object RnxVer: TComboBox
+    Left = 84
+    Top = 5
+    Width = 83
+    Height = 21
+    Style = csDropDownList
+    ItemHeight = 13
+    TabOrder = 2
+  end
+  object RnxFile: TCheckBox
+    Left = 327
+    Top = 6
+    Width = 84
+    Height = 17
+    Caption = 'RINEX Name'
+    TabOrder = 3
+    OnClick = RnxFileClick
+  end
+  object RnxCode: TEdit
+    Left = 224
+    Top = 5
+    Width = 95
+    Height = 21
+    TabOrder = 4
+    Text = '0000'
   end
 end

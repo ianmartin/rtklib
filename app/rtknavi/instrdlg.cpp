@@ -10,6 +10,7 @@
 #include "fileoptdlg.h"
 #include "tcpoptdlg.h"
 #include "ftpoptdlg.h"
+#include "rcvoptdlg.h"
 #include "instrdlg.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -138,7 +139,7 @@ AnsiString __fastcall TInputStrDialog::SetFilePath(AnsiString path)
 {
 	if (TimeTagC->Checked     ) path+="::T";
 	if (TimeStartE->Text!="0" ) path+="::+"+TimeStartE->Text;
-	if (TimeSpeedL->Text!="x1") path+="::"+TimeSpeedL->Text;
+	path+="::"+TimeSpeedL->Text;
 	return path;
 }
 //---------------------------------------------------------------------------
@@ -215,6 +216,27 @@ void __fastcall TInputStrDialog::BtnCmd3Click(TObject *Sender)
 	CmdEna[2][1]=CmdOptDialog->CmdEna[1];
 }
 //---------------------------------------------------------------------------
+void __fastcall TInputStrDialog::BtnRcvOpt1Click(TObject *Sender)
+{
+	RcvOptDialog->Option=RcvOpt[0];
+	if (RcvOptDialog->ShowModal()!=mrOk) return;
+	RcvOpt[0]=RcvOptDialog->Option;
+}
+//---------------------------------------------------------------------------
+void __fastcall TInputStrDialog::BtnRcvOpt2Click(TObject *Sender)
+{
+	RcvOptDialog->Option=RcvOpt[1];
+	if (RcvOptDialog->ShowModal()!=mrOk) return;
+	RcvOpt[1]=RcvOptDialog->Option;
+}
+//---------------------------------------------------------------------------
+void __fastcall TInputStrDialog::BtnRcvOpt3Click(TObject *Sender)
+{
+	RcvOptDialog->Option=RcvOpt[2];
+	if (RcvOptDialog->ShowModal()!=mrOk) return;
+	RcvOpt[2]=RcvOptDialog->Option;
+}
+//---------------------------------------------------------------------------
 void __fastcall TInputStrDialog::BtnPosClick(TObject *Sender)
 {
 	AnsiString s;
@@ -236,21 +258,21 @@ void __fastcall TInputStrDialog::SerialOpt(int index, int opt)
 //---------------------------------------------------------------------------
 void __fastcall TInputStrDialog::BtnFile1Click(TObject *Sender)
 {
-	OpenDialog->FileName=FilePath1->Text;
+	//OpenDialog->FileName=FilePath1->Text;
 	if (!OpenDialog->Execute()) return;
 	FilePath1->Text=OpenDialog->FileName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TInputStrDialog::BtnFile2Click(TObject *Sender)
 {
-	OpenDialog->FileName=FilePath2->Text;
+	//OpenDialog->FileName=FilePath2->Text;
 	if (!OpenDialog->Execute()) return;
 	FilePath2->Text=OpenDialog->FileName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TInputStrDialog::BtnFile3Click(TObject *Sender)
 {
-	OpenDialog->FileName=FilePath3->Text;
+	//OpenDialog->FileName=FilePath3->Text;
 	if (!OpenDialog->Execute()) return;
 	FilePath3->Text=OpenDialog->FileName;
 }
@@ -298,6 +320,9 @@ void __fastcall TInputStrDialog::UpdateEnable(void)
 	Format1   ->Enabled=StreamC1->Checked;
 	Format2   ->Enabled=StreamC2->Checked;
 	Format3   ->Enabled=StreamC3->Checked;
+	BtnRcvOpt1->Enabled=StreamC1->Checked;
+	BtnRcvOpt2->Enabled=StreamC2->Checked;
+	BtnRcvOpt3->Enabled=StreamC3->Checked;
 	
 	LabelNmea ->Enabled=ena2;
 	NmeaReqL  ->Enabled=ena2;

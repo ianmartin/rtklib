@@ -47,7 +47,7 @@ void utest2(void)
         assert(!s&&ep[0]==1980&&ep[1]==10&&ep[2]==30&&ep[3]==6&&ep[4]==58&&ep[5]==9);
     s=str2time(s4,4,20,&t); time2epoch(t,ep);
         assert(!s&&ep[0]==2037&&ep[1]==12&&ep[2]==31&&ep[3]==1&&ep[4]==2&&ep[5]==3);
-
+    
     printf("%s utset2 : OK\n",__FILE__);
 }
 /* epoch2time(),time2epoch() */
@@ -58,8 +58,10 @@ void utest3(void)
     double ep2[]={2004, 2,29, 2, 0,30.000000};
     double ep3[]={2004,12,31,23,59,59.999999};
     double ep4[]={2037,10, 1, 0, 0, 0.000000};
+    int year,month,day,mday[]={31,28,31,30,31,30,31,31,30,31,30,31};
     gtime_t t;
     double ep[6];
+    
     t=epoch2time(ep0); time2epoch(t,ep);
         assert(ep[0]==1980&&ep[1]==1&&ep[2]==6&&ep[3]==0&&ep[4]==0&&ep[5]==0.0);
     t=epoch2time(ep1); time2epoch(t,ep);
@@ -70,7 +72,21 @@ void utest3(void)
         assert(ep[0]==2004&&ep[1]==12&&ep[2]==31&&ep[3]==23&&ep[4]==59&&ep[5]==59.999999);
     t=epoch2time(ep4); time2epoch(t,ep);
         assert(ep[0]==2037&&ep[1]==10&&ep[2]==1&&ep[3]==0&&ep[4]==0&&ep[5]==0.0);
-
+    
+    for (year=1970;year<=2037;year++) {
+        mday[1]=year%4==0?29:28;
+        for (month=1;month<=12;month++) {
+            for (day=1;day<=mday[month-1];day++) {
+                if (year==1970&&month==1&&day==1) continue;
+                ep0[0]=year; ep0[1]=month; ep0[2]=day;
+                t=epoch2time(ep0); time2epoch(t,ep);
+                /* fprintf(stderr,"ep=%.0f %2.0f %2.0f : %.0f %2.0f %2.0f\n",
+                        ep0[0],ep0[1],ep0[2],ep[0],ep[1],ep[2]); */
+                assert(ep[0]==ep0[0]&&ep[1]==ep0[1]&&ep[2]==ep0[2]);
+                assert(ep[3]==0.0&&ep[4]==0.0&&ep[5]==0.0);
+            }
+        }
+    }
     printf("%s utset3 : OK\n",__FILE__);
 }
 /* gpst2time(), time2gpst() */

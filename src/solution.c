@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 * solution.c : solution functions
 *
-*          Copyright (C) 2007-2010 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
 *
 * version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
 * history : 2007/11/03  1.0 new
@@ -23,9 +23,13 @@
 *                                outnmea_gsv()
 *                            deleted api:
 *                                setsolopt(),setsolformat()
-*           2010/08/14  1.7  fix bug on initialize solution buffer
+*           2010/08/14  1.7  fix bug on initialize solution buffer (2.4.0_p2)
 *                            suppress enu-solution if base pos not available
+*                            (2.4.0_p3)
 *           2010/08/16  1.8  suppress null record if solution is not avalilable
+*                            (2.4.0_p4)
+*           2011/01/23  1.9  fix bug on reading nmea solution data
+*                            add api freesolstatbuf()
 *-----------------------------------------------------------------------------*/
 #include <ctype.h>
 #include "rtklib.h"
@@ -199,7 +203,7 @@ static int decode_nmeagga(char **val, int n, sol_t *sol)
     
     time2epoch(sol->time,ep);
     septime(tod,ep+3,ep+4,ep+5);
-    time=epoch2time(ep);
+    time=utc2gpst(epoch2time(ep));
     tt=timediff(time,sol->time);
     if      (tt<-43200.0) sol->time=timeadd(time, 86400.0);
     else if (tt> 43200.0) sol->time=timeadd(time,-86400.0);
@@ -488,8 +492,9 @@ static int decode_sol(char *buff, const solopt_t *opt, sol_t *sol, double *rb)
     }
     if (!strncmp(buff,"$GP",3)) { /* decode nmea */
         if (!decode_nmea(buff,sol)) return 0;
-        if (opt->posf!=SOLF_NMEA||
-            !strncmp(buff,"$GPRMC",6)) return 2; /* for time update only */
+        
+        /* for time update only */
+        if (opt->posf!=SOLF_NMEA&&!strncmp(buff,"$GPRMC",6)) return 2;
     }
     else { /* decode position record */
         if (!decode_solpos(buff,opt,sol)) return 0;
@@ -623,15 +628,18 @@ static int cmpsol(const void *p1, const void *p2)
 /* sort solution data --------------------------------------------------------*/
 static int sort_solbuf(solbuf_t *solbuf)
 {
+    sol_t *solbuf_data;
+    
     trace(4,"sort_solbuf: n=%d\n",solbuf->n);
     
     if (solbuf->n<=0) return 0;
     
-    if (!(solbuf->data=realloc(solbuf->data,sizeof(sol_t)*solbuf->n))) {
-        fprintf(stderr,"sort_solbuf: memory allocation error\n");
-        solbuf->n=solbuf->nmax=0;
+    if (!(solbuf_data=(sol_t *)realloc(solbuf->data,sizeof(sol_t)*solbuf->n))) {
+        trace(1,"sort_solbuf: memory allocation error\n");
+        free(solbuf->data); solbuf->data=NULL; solbuf->n=solbuf->nmax=0;
         return 0;
     }
+    solbuf->data=solbuf_data;
     qsort(solbuf->data,solbuf->n,sizeof(sol_t),cmpsol);
     solbuf->nmax=solbuf->n;
     solbuf->start=0;
@@ -693,6 +701,8 @@ extern int readsol(char *files[], int nfile, solbuf_t *sol)
 *-----------------------------------------------------------------------------*/
 extern int addsol(solbuf_t *solbuf, const sol_t *sol)
 {
+    sol_t *solbuf_data;
+    
     trace(4,"addsol:\n");
     
     if (solbuf->cyclic) { /* ring buffer */
@@ -708,11 +718,12 @@ extern int addsol(solbuf_t *solbuf, const sol_t *sol)
     }
     if (solbuf->n>=solbuf->nmax) {
         solbuf->nmax=solbuf->nmax==0?8192:solbuf->nmax*2;
-        if (!(solbuf->data=realloc(solbuf->data,sizeof(sol_t)*solbuf->nmax))) {
+        if (!(solbuf_data=(sol_t *)realloc(solbuf->data,sizeof(sol_t)*solbuf->nmax))) {
             trace(1,"addsol: memory allocation error\n");
-            solbuf->n=solbuf->nmax=0;
+            free(solbuf->data); solbuf->data=NULL; solbuf->n=solbuf->nmax=0;
             return 0;
         }
+        solbuf->data=solbuf_data;
     }
     solbuf->data[solbuf->n++]=*sol;
     return 1;
@@ -759,7 +770,7 @@ extern void initsolbuf(solbuf_t *solbuf, int cyclic, int nmax)
         solbuf->nmax=nmax;
     }
 }
-/* free solution buffer --------------------------------------------------------
+/* free solution ---------------------------------------------------------------
 * free memory for solution buffer
 * args   : solbuf_t *solbuf I  solution buffer
 * return : none
@@ -772,6 +783,14 @@ extern void freesolbuf(solbuf_t *solbuf)
     solbuf->n=solbuf->nmax=solbuf->start=solbuf->end=0;
     solbuf->data=NULL;
 }
+extern void freesolstatbuf(solstatbuf_t *solstatbuf)
+{
+    trace(3,"freesolstatbuf: n=%d\n",solstatbuf->n);
+    
+    solstatbuf->n=solstatbuf->nmax=0;
+    free(solstatbuf->data);
+    solstatbuf->data=NULL;
+}
 /* compare solution status ---------------------------------------------------*/
 static int cmpsolstat(const void *p1, const void *p2)
 {
@@ -782,15 +801,18 @@ static int cmpsolstat(const void *p1, const void *p2)
 /* sort solution data --------------------------------------------------------*/
 static int sort_solstat(solstatbuf_t *statbuf)
 {
+    solstat_t *statbuf_data;
+    
     trace(4,"sort_solstat: n=%d\n",statbuf->n);
     
     if (statbuf->n<=0) return 0;
     
-    if (!(statbuf->data=realloc(statbuf->data,sizeof(solstat_t)*statbuf->n))) {
-        fprintf(stderr,"sort_solstat: memory allocation error\n");
-        statbuf->n=statbuf->nmax=0;
+    if (!(statbuf_data=realloc(statbuf->data,sizeof(solstat_t)*statbuf->n))) {
+        trace(1,"sort_solstat: memory allocation error\n");
+        free(statbuf->data); statbuf->data=NULL; statbuf->n=statbuf->nmax=0;
         return 0;
     }
+    statbuf->data=statbuf_data;
     qsort(statbuf->data,statbuf->n,sizeof(solstat_t),cmpsolstat);
     statbuf->nmax=statbuf->n;
     return 1;
@@ -830,7 +852,7 @@ static int decode_solstat(char *buff, solstat_t *stat)
     stat->resp =(float)resp;
     stat->resc =(float)resc;
     stat->flag =(unsigned char)((vsat<<5)+(slip<<3)+fix);
-    stat->snr  =(unsigned char)snr;
+    stat->snr  =(unsigned char)(snr*4.0+0.5);
     stat->lock =(unsigned short)lock;
     stat->outc =(unsigned short)outc;
     stat->slipc=(unsigned short)slipc;
@@ -840,15 +862,19 @@ static int decode_solstat(char *buff, solstat_t *stat)
 /* add solution status data --------------------------------------------------*/
 static void addsolstat(solstatbuf_t *statbuf, const solstat_t *stat)
 {
+    solstat_t *statbuf_data;
+    
     trace(4,"addsolstat:\n");
     
     if (statbuf->n>=statbuf->nmax) {
         statbuf->nmax=statbuf->nmax==0?8192:statbuf->nmax*2;
-        if (!(statbuf->data=realloc(statbuf->data,sizeof(solstat_t)*statbuf->nmax))) {
+        if (!(statbuf_data=(solstat_t *)realloc(statbuf->data,sizeof(solstat_t)*
+                                                statbuf->nmax))) {
             trace(1,"addsolstat: memory allocation error\n");
-            statbuf->n=statbuf->nmax=0;
+            free(statbuf->data); statbuf->data=NULL; statbuf->n=statbuf->nmax=0;
             return;
         }
+        statbuf->data=statbuf_data;
     }
     statbuf->data[statbuf->n++]=*stat;
 }
@@ -1114,7 +1140,7 @@ extern int outnmea_gsv(unsigned char *buff, const sol_t *sol,
                 if (satsys(sat,&prn)==SYS_SBS) prn=33+prn-MINPRNSBS;
                 az =ssat[sats[k]-1].azel[0]*R2D; if (az<0.0) az+=360.0;
                 el =ssat[sats[k]-1].azel[1]*R2D;
-                snr=ssat[sats[k]-1].snr [0];
+                snr=ssat[sats[k]-1].snr[0]*0.25;
                 p+=sprintf(p,",%02d,%02.0f,%03.0f,%02.0f",prn,el,az,snr);
             }
             else p+=sprintf(p,",,,,");
@@ -1134,15 +1160,18 @@ extern int outprcopts(unsigned char *buff, const prcopt_t *opt)
 {
     const int sys[]={SYS_GPS,SYS_GLO,SYS_GAL,SYS_QZS,SYS_SBS,0};
     const char *s1[]={"single","dgps","kinematic","static","moving-base","fixed",
-                 "ppp-kinematic","ppp-static"};
-    const char *s2[]={"L1","L1+L2","L1+L2+L5","L1+L2+L5+L7","L1+L2+L5+L7+L6"};
+                 "ppp-kinematic","ppp-static","ppp-fixed",""};
+    const char *s2[]={"L1","L1+L2","L1+L2+L5","L1+L2+L5+L6","L1+L2+L5+L6+L7",
+                      "L1+L2+L5+L6+L7+L8",""};
     const char *s3[]={"forward","backward","combined"};
-    const char *s4[]={"off","broadcast","sbas","iono-free","estimation"};
-    const char *s5[]={"off","saastamoinen","sbas","estimation"};
-    const char *s6[]={"broadcast","precise","broadcast+sbas","broadcast+ssr"};
-    const char *s7[]={"gps","glonass","galileo","qzss","sbas"};
-    const char *s8[]={"off","continuous","instantaneous","fix and hold"};
-    const char *s9[]={"off","on","auto calib","external calib"};
+    const char *s4[]={"off","broadcast","sbas","iono-free","estimation",
+                      "ionex tec","qzs","lex","vtec_sf","vtec_ef","gtec",""};
+    const char *s5[]={"off","saastamoinen","sbas","est ztd","est ztd+grad",""};
+    const char *s6[]={"broadcast","precise","broadcast+sbas","broadcast+ssr apc",
+                      "broadcast+ssr com","qzss lex",""};
+    const char *s7[]={"gps","glonass","galileo","qzss","sbas",""};
+    const char *s8[]={"off","continuous","instantaneous","fix and hold",""};
+    const char *s9[]={"off","on","auto calib","external calib",""};
     int i;
     char *p=(char *)buff;
     

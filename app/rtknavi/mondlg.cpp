@@ -13,7 +13,15 @@
 #define LEFTMARGIN	3
 #define MAXLINE		2048
 #define MAXLEN		200
-#define NMONITEM	16
+
+#define NMONITEM	21
+
+#define IONLON1		110.0
+#define IONLON2		165.0
+#define IONLAT1		55.0
+#define IONLAT2		15.0
+#define DIONLON		2.0
+#define DIONLAT		1.0
 
 //---------------------------------------------------------------------------
 
@@ -82,14 +90,19 @@ void __fastcall TMonitorDialog::Timer1Timer(TObject *Sender)
 		case  5: ShowNav();      break;
 		case  6: ShowGnav();     break;
 		case  7: ShowSbsNav();   break;
-		case  8: ShowStr();      break;
-		case  9: ShowSbsMsg();   break;
-		case 10: ShowSbsLong();  break;
-		case 11: ShowSbsIono();  break;
-		case 12: ShowSbsFast();  break;
-		case 13: ShowRtcm();     break;
-		case 14: ShowRtcmDgps(); break;
-		case 15: ShowRtcmSsr();  break;
+		case  8: ShowIonUtc();   break;
+		case  9: ShowStr();      break;
+		case 10: ShowSbsMsg();   break;
+		case 11: ShowSbsLong();  break;
+		case 12: ShowSbsIono();  break;
+		case 13: ShowSbsFast();  break;
+		case 14: ShowRtcm();     break;
+		case 15: ShowRtcmDgps(); break;
+		case 16: ShowRtcmSsr();  break;
+		case 17: ShowLexMsg();   break;
+		case 18: ShowLexEph();   break;
+		case 19: ShowLexIon();   break;
+		case 20: ShowIonCorr();  break;
 	}
 }
 //---------------------------------------------------------------------------
@@ -106,14 +119,19 @@ void __fastcall TMonitorDialog::ClearTable(void)
 		case  5: SetNav();      break;
 		case  6: SetGnav();     break;
 		case  7: SetSbsNav();   break;
-		case  8: SetStr();      break;
-		case  9: SetSbsMsg();   break;
-		case 10: SetSbsLong();  break;
-		case 11: SetSbsIono();  break;
-		case 12: SetSbsFast();  break;
-		case 13: SetRtcm();     break;
-		case 14: SetRtcmDgps(); break;
-		case 15: SetRtcmSsr();  break;
+		case  8: SetIonUtc();   break;
+		case  9: SetStr();      break;
+		case 10: SetSbsMsg();   break;
+		case 11: SetSbsLong();  break;
+		case 12: SetSbsIono();  break;
+		case 13: SetSbsFast();  break;
+		case 14: SetRtcm();     break;
+		case 15: SetRtcmDgps(); break;
+		case 16: SetRtcmSsr();  break;
+		case 17: SetLexMsg();   break;
+		case 18: SetLexEph();   break;
+		case 19: SetLexIon();   break;
+		case 20: SetIonCorr();  break;
 		default: console=1;     break;
 	}
 	Console ->Visible=console;
@@ -121,11 +139,13 @@ void __fastcall TMonitorDialog::ClearTable(void)
 	BtnPause->Visible=console;
 	BtnDown ->Visible=console;
 	BtnClear->Visible=console;
-	BtnAsc  ->Visible=16<=TypeF&&TypeF<=18;
-	BtnHex  ->Visible=16<=TypeF&&TypeF<=18;
+	BtnAsc  ->Visible=NMONITEM<=TypeF&&TypeF<=NMONITEM+2;
+	BtnHex  ->Visible=NMONITEM<=TypeF&&TypeF<=NMONITEM+2;
 	Tbl     ->Visible=!console;
-	SelStr  ->Visible=TypeF==13;
-	SelEph  ->Visible=5<=TypeF&&TypeF<= 7;
+	SelSat  ->Visible=1<=TypeF&&TypeF<=3||5<=TypeF&&TypeF<=7;
+	SelStr  ->Visible=TypeF==14||TypeF==17;
+	SelEph  ->Visible=5<=TypeF&&TypeF<=7;
+	SelIon  ->Visible=TypeF==20;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMonitorDialog::Timer2Timer(TObject *Sender)
@@ -264,16 +284,16 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	AnsiString sol[]={"-","Fix","Float","SBAS","DGPS","Single","PPP",""};
 	AnsiString mode[]={"Single","DGPS","Kinematic","Static","Moving-Base",
 					   "Fixed","PPP-Kinematic","PPP-Static",""};
-	AnsiString freq[]={"-","L1","L1+L2","L1+L2+L5","","",""};
+	AnsiString freq[]={"-","L1","L1+L2","L1+L2+L5","L1+L2+L5+L6","L1+L2+L5+L6+L7","L1+L2+L5+L6+L7+L8",""};
 	double *del,*off1,*off2,runtime,rt[3]={0},dop[4]={0};
 	double azel[MAXSAT*2],pos[3],vel[3];
 	int i,j,k,thread,cycle,state,rtkstat,nsat0,nsat1,prcout;
 	int cputime,nb[3]={0},nmsg[3][10]={{0}},ne;
 	char tstr[64],*ant,id[32],s1[64]="-",s2[64]="-",s3[64]="-";
 	char file[1024]="";
-	char *ionoopt[]={"OFF","Broadcast","SBAS","Dual-Frequency","Estimate STEC","",""};
+	char *ionoopt[]={"OFF","Broadcast","SBAS","Dual-Frequency","Estimate STEC","IONEX TEC","QZSS LEX",""};
 	char *tropopt[]={"OFF","Saastamoinen","SBAS","Estimate ZTD","Estimate ZTD+Grad",""};
-	char *ephopt []={"Broadcast","Precise","Broadcast+SBAS","Broadcat+SSR APC","Broadcast+SSR CoM"};
+	char *ephopt []={"Broadcast","Precise","Broadcast+SBAS","Broadcat+SSR APC","Broadcast+SSR CoM","QZSS LEX",""};
 	
 	rtksvrlock(&rtksvr); // lock
 	
@@ -356,6 +376,7 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	for (j=1;j<=MAXSAT;j++) {
 		if (!rtk.opt.exsats[j-1]) continue;
 		satno2id(j,id);
+		if (rtk.opt.exsats[j-1]==2) exsats=exsats+"+";
 		exsats=exsats+id+" ";
 	}
 	Tbl->Cells[0][i  ]="Excluded Satellites";
@@ -377,19 +398,19 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	Tbl->Cells[1][i++]=s.sprintf("%d,%d,%d",nb[0],nb[1],nb[2]);
 	
 	Tbl->Cells[0][i  ]="# of Input Data Rover";
-	Tbl->Cells[1][i++]=s.sprintf("Obs(%d),Nav(%d),Gnav(%d),Ion(%d),Sbs(%d),Pos(%d),Dgps(%d),Ssr(%d),Err(%d)",
+	Tbl->Cells[1][i++]=s.sprintf("Obs(%d),Nav(%d),Gnav(%d),Ion(%d),Sbs(%d),Pos(%d),Dgps(%d),Ssr(%d),Lex(%d),Err(%d)",
 								 nmsg[0][0],nmsg[0][1],nmsg[0][6],nmsg[0][2],nmsg[0][3],
-								 nmsg[0][4],nmsg[0][5],nmsg[0][7],nmsg[0][9]);
+								 nmsg[0][4],nmsg[0][5],nmsg[0][7],nmsg[0][8],nmsg[0][9]);
 	
 	Tbl->Cells[0][i  ]="# of Input Data Base/NRTK Station";
-	Tbl->Cells[1][i++]=s.sprintf("Obs(%d),Nav(%d),Gnav(%d),Ion(%d),Sbs(%d),Pos(%d),Dgps(%d),Ssr(%d),Err(%d)",
+	Tbl->Cells[1][i++]=s.sprintf("Obs(%d),Nav(%d),Gnav(%d),Ion(%d),Sbs(%d),Pos(%d),Dgps(%d),Ssr(%d),Lex(%d),Err(%d)",
 								 nmsg[1][0],nmsg[1][1],nmsg[1][6],nmsg[1][2],nmsg[1][3],
-								 nmsg[1][4],nmsg[1][5],nmsg[1][7],nmsg[1][9]);
+								 nmsg[1][4],nmsg[1][5],nmsg[1][7],nmsg[1][8],nmsg[1][9]);
 	
 	Tbl->Cells[0][i  ]="# of Input Data Ephemeris";
-	Tbl->Cells[1][i++]=s.sprintf("Obs(%d),Nav(%d),Gnav(%d),Ion(%d),Sbs(%d),Pos(%d),Dgps(%d),Ssr(%d),Err(%d)",
+	Tbl->Cells[1][i++]=s.sprintf("Obs(%d),Nav(%d),Gnav(%d),Ion(%d),Sbs(%d),Pos(%d),Dgps(%d),Ssr(%d),Lex(%d),Err(%d)",
 								 nmsg[2][0],nmsg[2][1],nmsg[2][6],nmsg[2][2],nmsg[2][3],
-								 nmsg[2][4],nmsg[2][5],nmsg[2][7],nmsg[2][9]);
+								 nmsg[2][4],nmsg[2][5],nmsg[2][7],nmsg[2][8],nmsg[2][9]);
 	
 	Tbl->Cells[0][i  ]="Solution Status";
 	Tbl->Cells[1][i++]=sol[rtkstat];
@@ -508,16 +529,16 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 //---------------------------------------------------------------------------
 void __fastcall TMonitorDialog::SetSat(void)
 {
-	int i,j=0,freq[]={1,2,5,6,7};
+	int i,j=0,freq[]={1,2,5,6,7,8};
 	AnsiString s,label[]={
-		"SAT","ID","C1","Azimuth (deg)","Elevation (deg)","LG (m)","PHW(cyc)",
+		"SAT","PRN","Status","Azimuth (deg)","Elevation (deg)","LG (m)","PHW(cyc)",
 		"P1-P2(m)","P1-C1(m)","P2-C2(m)"
 	};
 	int width[]={25,25,30,45,45,60,60,40,40,40};
 	
 	Tbl->ColCount=10+NFREQ*9;
 	Tbl->RowCount=2;
-	for (i=0;i<3;i++) {
+	for (i=0;i<5;i++) {
 		Tbl->ColWidths [j]=width[i]*FontScale/96;
 		Tbl->Cells[j  ][0]=label[i];
 		Tbl->Cells[j++][1]="";
@@ -530,6 +551,16 @@ void __fastcall TMonitorDialog::SetSat(void)
 	for (i=0;i<NFREQ;i++) {
 		Tbl->ColWidths [j]=40*FontScale/96;
 		Tbl->Cells[j  ][0]=s.sprintf("Fix%d",freq[i]);
+		Tbl->Cells[j++][1]="";
+	}
+	for (i=0;i<NFREQ;i++) {
+		Tbl->ColWidths [j]=45*FontScale/96;
+		Tbl->Cells[j  ][0]=s.sprintf("P%d Residual(m)",freq[i]);
+		Tbl->Cells[j++][1]="";
+	}
+	for (i=0;i<NFREQ;i++) {
+		Tbl->ColWidths [j]=45*FontScale/96;
+		Tbl->Cells[j  ][0]=s.sprintf("L%d Residual(m)",freq[i]);
 		Tbl->Cells[j++][1]="";
 	}
 	for (i=0;i<NFREQ;i++) {
@@ -557,17 +588,7 @@ void __fastcall TMonitorDialog::SetSat(void)
 		Tbl->Cells[j  ][0]=s.sprintf("WaveL%d(m)",freq[i]);
 		Tbl->Cells[j++][1]="";
 	}
-	for (i=0;i<NFREQ;i++) {
-		Tbl->ColWidths [j]=45*FontScale/96;
-		Tbl->Cells[j  ][0]=s.sprintf("P%d Residual(m)",freq[i]);
-		Tbl->Cells[j++][1]="";
-	}
-	for (i=0;i<NFREQ;i++) {
-		Tbl->ColWidths [j]=45*FontScale/96;
-		Tbl->Cells[j  ][0]=s.sprintf("L%d Residual(m)",freq[i]);
-		Tbl->Cells[j++][1]="";
-	}
-	for (i=3;i<10;i++) {
+	for (i=5;i<10;i++) {
 		Tbl->ColWidths [j]=width[i]*FontScale/96;
 		Tbl->Cells[j  ][0]=label[i];
 		Tbl->Cells[j++][1]="";
@@ -579,7 +600,7 @@ void __fastcall TMonitorDialog::ShowSat(void)
 	rtk_t rtk;
 	ssat_t *ssat;
 	AnsiString s;
-	int i,j,k,fix;
+	int i,j,k,n,fix,prn;
 	char id[32];
 	double az,el,lam[MAXSAT][NFREQ],cbias[MAXSAT][3];
 	
@@ -593,52 +614,67 @@ void __fastcall TMonitorDialog::ShowSat(void)
 	}
 	rtksvrunlock(&rtksvr);
 	
-	Tbl->RowCount=MAXSAT+1;
 	Label->Caption="";
-	for (i=0;i<MAXSAT;i++) {
-		j=0;
-		satno2id(i+1,id);
+	
+	for (i=0,n=1;i<MAXSAT;i++) {
 		ssat=rtk.ssat+i;
-		Tbl->Cells[j++][i+1]=id;
-		Tbl->Cells[j++][i+1]=s.sprintf("%d",i+1);
-		Tbl->Cells[j++][i+1]=ssat->vs?"OK":"-";
+		if (SelSat->ItemIndex==1&&!ssat->vs) continue;
+		n++;
+	}
+	if (n<2) {
+		Tbl->RowCount=2;
+		for (i=0;i<Tbl->ColCount;i++) Tbl->Cells[i][1]="";
+		return;
+	}
+	Tbl->RowCount=n;
+	
+	for (i=0,n=1;i<MAXSAT;i++) {
+		j=0;
+		ssat=rtk.ssat+i;
+		if (SelSat->ItemIndex==1&&!ssat->vs) continue;
+		satno2id(i+1,id);
+		satsys(i+1,&prn);
+		Tbl->Cells[j++][n]=id;
+		Tbl->Cells[j++][n]=s.sprintf("%d",prn);
+		Tbl->Cells[j++][n]=ssat->vs?"OK":"-";
+		az=ssat->azel[0]*R2D; if (az<0.0) az+=360.0;
+		el=ssat->azel[1]*R2D;
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",az);
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",el);
 		for (k=0;k<NFREQ;k++) {
-			Tbl->Cells[j++][i+1]=ssat->vsat[k]?"OK":"-";
+			Tbl->Cells[j++][n]=ssat->vsat[k]?"OK":"-";
 		}
 		for (k=0;k<NFREQ;k++) {
 			fix=ssat->fix[k];
-			Tbl->Cells[j++][i+1]=fix==1?"FLOAT":(fix==2?"FIX":(fix==3?"HOLD":"-"));
+			Tbl->Cells[j++][n]=fix==1?"FLOAT":(fix==2?"FIX":(fix==3?"HOLD":"-"));
 		}
 		for (k=0;k<NFREQ;k++) {
-			Tbl->Cells[j++][i+1]=s.sprintf("%d",ssat->slipc[k]);
+			Tbl->Cells[j++][n]=s.sprintf("%.2f",ssat->resp[k]);
 		}
 		for (k=0;k<NFREQ;k++) {
-			Tbl->Cells[j++][i+1]=s.sprintf("%d",ssat->lock[k]);
+			Tbl->Cells[j++][n]=s.sprintf("%.4f",ssat->resc[k]);
 		}
 		for (k=0;k<NFREQ;k++) {
-			Tbl->Cells[j++][i+1]=s.sprintf("%d",ssat->outc[k]);
+			Tbl->Cells[j++][n]=s.sprintf("%d",ssat->slipc[k]);
 		}
 		for (k=0;k<NFREQ;k++) {
-			Tbl->Cells[j++][i+1]=s.sprintf("%d",ssat->rejc[k]);
+			Tbl->Cells[j++][n]=s.sprintf("%d",ssat->lock[k]);
 		}
 		for (k=0;k<NFREQ;k++) {
-			Tbl->Cells[j++][i+1]=s.sprintf("%7.5f",lam[i][k]);
+			Tbl->Cells[j++][n]=s.sprintf("%d",ssat->outc[k]);
 		}
 		for (k=0;k<NFREQ;k++) {
-			Tbl->Cells[j++][i+1]=s.sprintf("%.2f",ssat->resp[k]);
+			Tbl->Cells[j++][n]=s.sprintf("%d",ssat->rejc[k]);
 		}
 		for (k=0;k<NFREQ;k++) {
-			Tbl->Cells[j++][i+1]=s.sprintf("%.4f",ssat->resc[k]);
+			Tbl->Cells[j++][n]=s.sprintf("%7.5f",lam[i][k]);
 		}
-		az=ssat->azel[0]*R2D; if (az<0.0) az+=360.0;
-		el=ssat->azel[1]*R2D;
-		Tbl->Cells[j++][i+1]=s.sprintf("%.1f",az);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.1f",el);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.3f",ssat->gf);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.2f",ssat->phw);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.2f",cbias[i][0]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.2f",cbias[i][1]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.2f",cbias[i][2]);
+		Tbl->Cells[j++][n]=s.sprintf("%.3f",ssat->gf);
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",ssat->phw);
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",cbias[i][0]);
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",cbias[i][1]);
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",cbias[i][2]);
+		n++;
 	}
 }
 //---------------------------------------------------------------------------
@@ -661,7 +697,7 @@ void __fastcall TMonitorDialog::SetEst(void)
 void __fastcall TMonitorDialog::ShowEst(void)
 {
 	gtime_t time;
-	int i,nx,na;
+	int i,nx,na,n;
 	double *x,*P=NULL,*xa=NULL,*Pa=NULL;
 	AnsiString s,s0="-";
 	char tstr[64];
@@ -682,16 +718,28 @@ void __fastcall TMonitorDialog::ShowEst(void)
 	}
 	rtksvrunlock(&rtksvr);
 	
-	Tbl->RowCount=nx+1>2?nx+1:2;
+	for (i=0,n=1;i<nx;i++) {
+		if (SelSat->ItemIndex==1&&x[i]==0.0) continue;
+		n++;
+	}
+	if (n<2) {
+		Tbl->RowCount=2;
+		for (i=0;i<Tbl->ColCount;i++) Tbl->Cells[i][1]="";
+		return;
+	}
+	Tbl->RowCount=n;
+	
 	time2str(time,tstr,9);
 	Label->Caption=time.time?s.sprintf("Time: %s",tstr):s0;
-	for (i=0;i<nx;i++) {
+	for (i=0,n=1;i<nx;i++) {
 		int j=0;
-		Tbl->Cells[j++][i+1]=s.sprintf("X_%d",i+1);
-		Tbl->Cells[j++][i+1]=x[i]==0.0?s0:s.sprintf("%.3f",x[i]);
-		Tbl->Cells[j++][i+1]=P[i+i*nx]==0.0?s0:s.sprintf("%.3f",SQRT(P[i+i*nx]));
-		Tbl->Cells[j++][i+1]=i>=na||xa[i]==0?s0:s.sprintf("%.3f",xa[i]);
-		Tbl->Cells[j++][i+1]=i>=na||Pa[i+i*na]==0.0?s0:s.sprintf("%.3f",SQRT(Pa[i+i*na]));
+		if (SelSat->ItemIndex==1&&x[i]==0.0) continue;
+		Tbl->Cells[j++][n]=s.sprintf("X_%d",i+1);
+		Tbl->Cells[j++][n]=x[i]==0.0?s0:s.sprintf("%.3f",x[i]);
+		Tbl->Cells[j++][n]=P[i+i*nx]==0.0?s0:s.sprintf("%.3f",SQRT(P[i+i*nx]));
+		Tbl->Cells[j++][n]=i>=na||xa[i]==0?s0:s.sprintf("%.3f",xa[i]);
+		Tbl->Cells[j++][n]=i>=na||Pa[i+i*na]==0.0?s0:s.sprintf("%.3f",SQRT(Pa[i+i*na]));
+		n++;
 	}
 	free(x); free(P); free(xa); free(Pa);
 }
@@ -712,7 +760,7 @@ void __fastcall TMonitorDialog::SetCov(void)
 void __fastcall TMonitorDialog::ShowCov(void)
 {
 	gtime_t time;
-	int i,j,nx;
+	int i,j,nx,n,m;
 	double *x,*P=NULL;
 	AnsiString s,s0="-";
 	char tstr[64];
@@ -728,18 +776,33 @@ void __fastcall TMonitorDialog::ShowCov(void)
 	}
 	rtksvrunlock(&rtksvr);
 	
-	Tbl->ColCount=nx+1>2?nx+1:2;
-	Tbl->RowCount=nx+1>2?nx+1:2;
+	for (i=0,n=1;i<nx;i++) {
+		if (SelSat->ItemIndex==1&&(x[i]==0.0||P[i+i*nx]==0.0)) continue;
+		n++;
+	}
+	if (n<2) {
+		Tbl->ColCount=2;
+		Tbl->RowCount=2;
+		Tbl->Cells[1][1]="";
+		return;
+	}
+	Tbl->ColCount=n;
+	Tbl->RowCount=n;
+	
 	time2str(time,tstr,9);
 	Label->Caption=time.time?s.sprintf("Time: %s",tstr):s0;
-	for (i=0;i<nx;i++) {
-		Tbl->ColWidths[i+1]=45*FontScale/96;
-		Tbl->Cells[0][i+1]=s.sprintf("X_%d",i+1);
-		Tbl->Cells[i+1][0]=s.sprintf("X_%d",i+1);
-		for (j=0;j<nx;j++) {
-			Tbl->Cells[j+1][i+1]=
+	for (i=0,n=1;i<nx;i++) {
+		if (SelSat->ItemIndex==1&&(x[i]==0.0||P[i+i*nx]==0.0)) continue;
+		Tbl->ColWidths[n]=45*FontScale/96;
+		Tbl->Cells[0][n]=s.sprintf("X_%d",i+1);
+		Tbl->Cells[n][0]=s.sprintf("X_%d",i+1);
+		for (j=0,m=1;j<nx;j++) {
+			if (SelSat->ItemIndex==1&&(x[j]==0.0||P[j+j*nx]==0.0)) continue;
+			Tbl->Cells[m][n]=
 				P[i+j*nx]==0.0?s0:s.sprintf("%.5f",SQRT(P[i+j*nx]));
+			m++;
 		}
+		n++;
 	}
 	free(x); free(P);
 }
@@ -825,7 +888,7 @@ void __fastcall TMonitorDialog::ShowObs(void)
 			Tbl->Cells[j++][i+1]=s.sprintf("%.3f",obs[i].D[k]);
 		}
 		for (k=0;k<NFREQ;k++) {
-			Tbl->Cells[j++][i+1]=s.sprintf("%d",obs[i].SNR[k]);
+			Tbl->Cells[j++][i+1]=s.sprintf("%.1f",obs[i].SNR[k]*0.25);
 		}
 		for (k=0;k<NFREQ;k++) {
 			Tbl->Cells[j++][i+1]=s.sprintf("%d",obs[i].LLI[k]);
@@ -841,17 +904,17 @@ void __fastcall TMonitorDialog::ShowObs(void)
 void __fastcall TMonitorDialog::SetNav(void)
 {
 	AnsiString label[]={
-		"SAT","ID","Status","IODE","IODC","Accuracy","Health","Toe","Toc","Ttrans",
+		"SAT","PRN","Status","IODE","IODC","Accuracy","Health","Toe","Toc","Ttrans",
 		"A (m)","e","i0 (deg)","OMEGA0 (deg)","omega (deg)","M0 (deg)",
 		"deltan (deg/s)","OMEGAdot (deg/s)","IDOT (deg/s)",
-		"af0 (s)","af1 (s/s)","af2 (s/s2)","TGD (s)",
+		"af0 (ns)","af1 (ns/s)","af2 (ns/s2)","TGD (ns)","BGD5a(ns)","BGD5b(ns)",
 		"Cuc(rad)","Cus(rad)","Crc(m)","Crs(m)","Cic(rad)","Cis(rad)","Code","Flag",
 	};
 	int i,width[]={
-		25,25,30,30,30,25,25,115,115,115, 80,70,60,60,60,60,70,70,70,70,
-		70,70,70,70,70,70,70,70,70,30, 30
+		25,25,30,30,30,25,25,115,115,115, 80,70,60,60,60,60,70,70,70,60,
+		50,50,50,50,50,70,70,70,70,70, 70,30,30
 	};
-	Tbl->ColCount=31;
+	Tbl->ColCount=33;
 	Tbl->RowCount=2;
 	for (i=0;i<Tbl->ColCount;i++) {
 		Tbl->ColWidths[i]=width[i]*FontScale/96;
@@ -863,80 +926,86 @@ void __fastcall TMonitorDialog::SetNav(void)
 void __fastcall TMonitorDialog::ShowNav(void)
 {
 	eph_t eph[MAXSAT];
-	double ion[8],utc[4];
 	gtime_t time;
 	AnsiString s;
 	char tstr[64],id[32];
-	int i,j,k,valid,sys,prn,nsat=0,off=SelEph->ItemIndex?MAXSAT:0;
+	int i,j,k,n,valid,sys,prn,off=SelEph->ItemIndex?MAXSAT:0;
 	
 	rtksvrlock(&rtksvr);
 	time=rtksvr.rtk.sol.time;
 	for (i=0;i<MAXSAT;i++) eph[i]=rtksvr.nav.eph[i+off];
-	for (i=0;i<8;i++) ion[i]=rtksvr.nav.ion_gps[i];
-	for (i=0;i<4;i++) utc[i]=rtksvr.nav.utc_gps[i];
 	rtksvrunlock(&rtksvr);
 	
-	Label->Caption=s.sprintf("ION/UTC: %.2E %.2E %.2E %.2E %.2E %.2E %.2E %.2E %.2E %.2E %.2E %.2E",
-							 ion[0],ion[1],ion[2],ion[3],
-							 ion[4],ion[5],ion[6],ion[7],
-							 utc[0],utc[1],utc[2],utc[3]);
-	for (i=0;i<MAXSAT;i++) {
-		sys=satsys(i+1,&prn);
-		if (sys!=SYS_GPS&&sys!=SYS_GAL&&sys!=SYS_QZS) continue;
-		nsat++;
-	}
-	Tbl->RowCount=nsat+1;
-	for (i=k=0;k<MAXSAT;k++) {
-		j=0;
-		valid=eph[k].toe.time!=0&&!eph[k].svh&&fabs(timediff(time,eph[k].toe))<=MAXDTOE;
+	Label->Caption="";
+	
+	for (k=0,n=1;k<MAXSAT;k++) {
 		sys=satsys(k+1,&prn);
 		if (sys!=SYS_GPS&&sys!=SYS_GAL&&sys!=SYS_QZS) continue;
+		valid=eph[k].toe.time!=0&&!eph[k].svh&&fabs(timediff(time,eph[k].toe))<=MAXDTOE;
+		if (SelSat->ItemIndex==1&&!valid) continue;
+		n++;
+	}
+	if (n<2) {
+		Tbl->RowCount=2;
+		for (i=0;i<Tbl->ColCount;i++) Tbl->Cells[i][1]="";
+		return;
+	}
+	Tbl->RowCount=n;
+	
+	for (k=0,n=1;k<MAXSAT;k++) {
+		j=0;
+		sys=satsys(k+1,&prn);
+		if (sys!=SYS_GPS&&sys!=SYS_GAL&&sys!=SYS_QZS) continue;
+		valid=eph[k].toe.time!=0&&!eph[k].svh&&fabs(timediff(time,eph[k].toe))<=MAXDTOE;
+		if (SelSat->ItemIndex==1&&!valid) continue;
 		satno2id(k+1,id);
-		Tbl->Cells[j++][i+1]=id;
-		Tbl->Cells[j++][i+1]=s.sprintf("%d",eph[k].sat);
-		Tbl->Cells[j++][i+1]=valid?"OK":"-";
+		Tbl->Cells[j++][n]=id;
+		Tbl->Cells[j++][n]=s.sprintf("%d",prn);
+		Tbl->Cells[j++][n]=valid?"OK":"-";
 		if (eph[k].iode<0) s="-"; else s.sprintf("%d",eph[k].iode);
-		Tbl->Cells[j++][i+1]=s;
+		Tbl->Cells[j++][n]=s;
 		if (eph[k].iodc<0) s="-"; else s.sprintf("%d",eph[k].iodc);
-		Tbl->Cells[j++][i+1]=s;
-		Tbl->Cells[j++][i+1]=s.sprintf("%d",eph[k].sva);
-		Tbl->Cells[j++][i+1]=s.sprintf("%02x",eph[k].svh);
+		Tbl->Cells[j++][n]=s;
+		Tbl->Cells[j++][n]=s.sprintf("%d",eph[k].sva);
+		Tbl->Cells[j++][n]=s.sprintf("%02x",eph[k].svh);
 		if (eph[k].toe.time!=0) time2str(eph[k].toe,tstr,0); else strcpy(tstr,"-");
-		Tbl->Cells[j++][i+1]=tstr;
+		Tbl->Cells[j++][n]=tstr;
 		if (eph[k].toc.time!=0) time2str(eph[k].toc,tstr,0); else strcpy(tstr,"-");
-		Tbl->Cells[j++][i+1]=tstr;
+		Tbl->Cells[j++][n]=tstr;
 		if (eph[k].ttr.time!=0) time2str(eph[k].ttr,tstr,0); else strcpy(tstr,"-");
-		Tbl->Cells[j++][i+1]=tstr;
-		Tbl->Cells[j++][i+1]=s.sprintf("%.3f",eph[k].A);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.8f",eph[k].e);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.5f",eph[k].i0  *R2D);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.5f",eph[k].OMG0*R2D);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.5f",eph[k].omg *R2D);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.5f",eph[k].M0  *R2D);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].deln*R2D);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].OMGd*R2D);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].idot*R2D);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].f0);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].f1);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].f2);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].tgd);
+		Tbl->Cells[j++][n]=tstr;
+		Tbl->Cells[j++][n]=s.sprintf("%.3f",eph[k].A);
+		Tbl->Cells[j++][n]=s.sprintf("%.8f",eph[k].e);
+		Tbl->Cells[j++][n]=s.sprintf("%.5f",eph[k].i0  *R2D);
+		Tbl->Cells[j++][n]=s.sprintf("%.5f",eph[k].OMG0*R2D);
+		Tbl->Cells[j++][n]=s.sprintf("%.5f",eph[k].omg *R2D);
+		Tbl->Cells[j++][n]=s.sprintf("%.5f",eph[k].M0  *R2D);
+		Tbl->Cells[j++][n]=s.sprintf("%.4E",eph[k].deln*R2D);
+		Tbl->Cells[j++][n]=s.sprintf("%.4E",eph[k].OMGd*R2D);
+		Tbl->Cells[j++][n]=s.sprintf("%.4E",eph[k].idot*R2D);
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",eph[k].f0*1E9);
+		Tbl->Cells[j++][n]=s.sprintf("%.4f",eph[k].f1*1E9);
+		Tbl->Cells[j++][n]=s.sprintf("%.4f",eph[k].f2*1E9);
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",eph[k].tgd[0]*1E9);
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",eph[k].tgd[1]*1E9);
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",eph[k].tgd[2]*1E9);
 		
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].cuc);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].cus);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].crc);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].crs);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].cic);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4E",eph[k].cis);
-		Tbl->Cells[j++][i+1]=s.sprintf("%d"  ,eph[k].code);
-		Tbl->Cells[j++][i+1]=s.sprintf("%d"  ,eph[k].flag);
-		i++;
+		Tbl->Cells[j++][n]=s.sprintf("%.4E",eph[k].cuc);
+		Tbl->Cells[j++][n]=s.sprintf("%.4E",eph[k].cus);
+		Tbl->Cells[j++][n]=s.sprintf("%.4E",eph[k].crc);
+		Tbl->Cells[j++][n]=s.sprintf("%.4E",eph[k].crs);
+		Tbl->Cells[j++][n]=s.sprintf("%.4E",eph[k].cic);
+		Tbl->Cells[j++][n]=s.sprintf("%.4E",eph[k].cis);
+		Tbl->Cells[j++][n]=s.sprintf("%d"  ,eph[k].code);
+		Tbl->Cells[j++][n]=s.sprintf("%d"  ,eph[k].flag);
+		n++;
 	}
 }
 //---------------------------------------------------------------------------
 void __fastcall TMonitorDialog::SetGnav(void)
 {
 	AnsiString label[]={
-		"SAT","ID","Status","IOD","Freq","Health","Age(days)","Toe","Tof",
+		"SAT","PRN","Status","IOD","Freq","Health","Age(days)","Toe","Tof",
 		"X (m)","Y (m)","Z (m)","VX (m/s)","VY (m/s)","VZ (m/s)",
 		"AX (m/s2)","AY (m/s2)","AZ (m/s2)","Tau (ns)","Gamma (ns/s)"
 	};
@@ -954,54 +1023,70 @@ void __fastcall TMonitorDialog::SetGnav(void)
 //---------------------------------------------------------------------------
 void __fastcall TMonitorDialog::ShowGnav(void)
 {
-	geph_t geph[MAXPRNGLO];
+	geph_t geph[NSATGLO];
 	gtime_t time;
 	AnsiString s;
 	char tstr[64],id[32];
-	int i,j,valid,off=SelEph->ItemIndex?MAXPRNGLO:0;
+	int i,j,n,valid,prn,off=SelEph->ItemIndex?NSATGLO:0;
 	
 	rtksvrlock(&rtksvr);
 	time=rtksvr.rtk.sol.time;
-	for (i=0;i<MAXPRNGLO;i++) geph[i]=rtksvr.nav.geph[i+off];
+	for (i=0;i<NSATGLO;i++) geph[i]=rtksvr.nav.geph[i+off];
 	rtksvrunlock(&rtksvr);
 	
 	Label->Caption="";
-	Tbl->RowCount=MAXPRNGLO+1;
-	for (i=0;i<MAXPRNGLO;i++) {
+	
+	for (i=0,n=1;i<NSATGLO;i++) {
+		valid=geph[i].toe.time!=0&&!geph[i].svh&&
+			  fabs(timediff(time,geph[i].toe))<=MAXDTOE_GLO;
+		if (SelSat->ItemIndex==1&&!valid) continue;
+		n++;
+	}
+	if (n<2) {
+		Tbl->RowCount=2;
+		for (i=0;i<Tbl->ColCount;i++) Tbl->Cells[i][1]="";
+		return;
+	}
+	Tbl->RowCount=n;
+	
+	for (i=0,n=1;i<NSATGLO;i++) {
 		j=0;
 		valid=geph[i].toe.time!=0&&!geph[i].svh&&
 			  fabs(timediff(time,geph[i].toe))<=MAXDTOE_GLO;
-		satno2id(satno(SYS_GLO,i+1),id);
-		Tbl->Cells[j++][i+1]=id;
-		Tbl->Cells[j++][i+1]=s.sprintf("%d",geph[i].sat);
-		Tbl->Cells[j++][i+1]=valid?"OK":"-";
+		if (SelSat->ItemIndex==1&&!valid) continue;
+		prn=MINPRNGLO+i;
+		satno2id(satno(SYS_GLO,prn),id);
+		Tbl->Cells[j++][n]=id;
+		Tbl->Cells[j++][n]=s.sprintf("%d",prn);
+		Tbl->Cells[j++][n]=valid?"OK":"-";
 		if (geph[i].iode<0) s="-"; else s.sprintf("%d",geph[i].iode);
-		Tbl->Cells[j++][i+1]=s;
-		Tbl->Cells[j++][i+1]=s.sprintf("%d",geph[i].frq);
-		Tbl->Cells[j++][i+1]=s.sprintf("%d",geph[i].svh);
-		Tbl->Cells[j++][i+1]=s.sprintf("%d",geph[i].age);
+		Tbl->Cells[j++][n]=s;
+		Tbl->Cells[j++][n]=s.sprintf("%d",geph[i].frq);
+		Tbl->Cells[j++][n]=s.sprintf("%d",geph[i].svh);
+		Tbl->Cells[j++][n]=s.sprintf("%d",geph[i].age);
 		if (geph[i].toe.time!=0) time2str(geph[i].toe,tstr,0); else strcpy(tstr,"-");
-		Tbl->Cells[j++][i+1]=tstr;
+		Tbl->Cells[j++][n]=tstr;
 		if (geph[i].tof.time!=0) time2str(geph[i].tof,tstr,0); else strcpy(tstr,"-");
-		Tbl->Cells[j++][i+1]=tstr;
-		Tbl->Cells[j++][i+1]=s.sprintf("%.2f",geph[i].pos[0]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.2f",geph[i].pos[1]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.2f",geph[i].pos[2]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.5f",geph[i].vel[0]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.5f",geph[i].vel[1]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.5f",geph[i].vel[2]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.7f",geph[i].acc[0]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.7f",geph[i].acc[1]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.7f",geph[i].acc[2]);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.1f",geph[i].taun*1E9);
-		Tbl->Cells[j++][i+1]=s.sprintf("%.4f",geph[i].gamn*1E9);
+		Tbl->Cells[j++][n]=tstr;
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",geph[i].pos[0]);
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",geph[i].pos[1]);
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",geph[i].pos[2]);
+		Tbl->Cells[j++][n]=s.sprintf("%.5f",geph[i].vel[0]);
+		Tbl->Cells[j++][n]=s.sprintf("%.5f",geph[i].vel[1]);
+		Tbl->Cells[j++][n]=s.sprintf("%.5f",geph[i].vel[2]);
+		Tbl->Cells[j++][n]=s.sprintf("%.7f",geph[i].acc[0]);
+		Tbl->Cells[j++][n]=s.sprintf("%.7f",geph[i].acc[1]);
+		Tbl->Cells[j++][n]=s.sprintf("%.7f",geph[i].acc[2]);
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",geph[i].taun*1E9);
+		Tbl->Cells[j++][n]=s.sprintf("%.4f",geph[i].gamn*1E9);
+		n++;
 	}
 }
 //---------------------------------------------------------------------------
 void __fastcall TMonitorDialog::SetSbsNav(void)
 {
 	AnsiString label[]={
-		"SAT","ID","Status","T0","Tof","Health","URA","X (m)","Y (m)","Z (m)","VX (m/s)",
+		"SAT","PRN","Status","T0","Tof","Health","URA","X (m)","Y (m)","Z (m)","VX (m/s)",
 		"VY (m/s)","VZ (m/s)","AX (m/s2)","AY (m/s2)","AZ (m/s2)",
 		"af0 (ns)","af1 (ns/s)"
 	};
@@ -1021,47 +1106,156 @@ void __fastcall TMonitorDialog::ShowSbsNav(void)
 	AnsiString s,s0="-";
 	seph_t seph[MAXPRNSBS-MINPRNSBS+1]={0};
 	gtime_t time;
-	int i,j,valid,n=0,off=SelEph->ItemIndex?MAXSBSSAT:0;
+	int i,j,n,valid,prn,off=SelEph->ItemIndex?NSATSBS:0;
 	char tstr[64],id[32];
 	
 	rtksvrlock(&rtksvr); // lock
 	time=rtksvr.rtk.sol.time;
-	for (int i=0;i<MAXSBSSAT;i++) {
+	for (int i=0;i<NSATSBS;i++) {
 		seph[i]=rtksvr.nav.seph[i+off];
 	}
 	rtksvrunlock(&rtksvr); // unlock
 	
 	Label->Caption="";
-	for (i=0;i<=MAXPRNSBS-MINPRNSBS;i++) {
+	
+	for (i=0,n=1;i<NSATSBS;i++) {
+		valid=fabs(timediff(time,seph[i].t0)<=MAXDTOE_SBS)&&
+			  seph[i].t0.time&&!seph[i].svh;
+		if (SelSat->ItemIndex==1&&!valid) continue;
+		n++;
+	}
+	if (n<2) {
+		Tbl->RowCount=2;
+		for (i=0;i<Tbl->ColCount;i++) Tbl->Cells[i][1]="";
+		return;
+	}
+	Tbl->RowCount=n;
+	
+	for (i=0,n=1;i<NSATSBS;i++) {
 		j=0;
 		valid=fabs(timediff(time,seph[i].t0)<=MAXDTOE_SBS)&&
 			  seph[i].t0.time&&!seph[i].svh;
-		satno2id(satno(SYS_SBS,i+MINPRNSBS),id);
-		Tbl->Cells[j++][n+1]=id;
-		Tbl->Cells[j++][n+1]=s.sprintf("%d",seph[i].sat);
-		Tbl->Cells[j++][n+1]=valid?"OK":"-";
+		if (SelSat->ItemIndex==1&&!valid) continue;
+		prn=MINPRNSBS+i;
+		satno2id(satno(SYS_SBS,prn),id);
+		Tbl->Cells[j++][n]=id;
+		Tbl->Cells[j++][n]=s.sprintf("%d",prn);
+		Tbl->Cells[j++][n]=valid?"OK":"-";
 		if (seph[i].t0.time) time2str(seph[i].t0,tstr,0);
 		else strcpy(tstr,"-");
-		Tbl->Cells[j++][n+1]=tstr;
+		Tbl->Cells[j++][n]=tstr;
 		if (seph[i].tof.time) time2str(seph[i].tof,tstr,0);
 		else strcpy(tstr,"-");
-		Tbl->Cells[j++][n+1]=tstr;
-		Tbl->Cells[j++][n+1]=s.sprintf("%2x", seph[i].svh);
-		Tbl->Cells[j++][n+1]=s.sprintf("%d",  seph[i].sva);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.2f",seph[i].pos[0]);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.2f",seph[i].pos[1]);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.2f",seph[i].pos[2]);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.6f",seph[i].vel[0]);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.6f",seph[i].vel[1]);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.6f",seph[i].vel[2]);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.7f",seph[i].acc[0]);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.7f",seph[i].acc[1]);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.7f",seph[i].acc[2]);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.1f",seph[i].af0*1E9);
-		Tbl->Cells[j++][n+1]=s.sprintf("%.4f",seph[i].af1*1E9);
+		Tbl->Cells[j++][n]=tstr;
+		Tbl->Cells[j++][n]=s.sprintf("%2x", seph[i].svh);
+		Tbl->Cells[j++][n]=s.sprintf("%d",  seph[i].sva);
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",seph[i].pos[0]);
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",seph[i].pos[1]);
+		Tbl->Cells[j++][n]=s.sprintf("%.2f",seph[i].pos[2]);
+		Tbl->Cells[j++][n]=s.sprintf("%.6f",seph[i].vel[0]);
+		Tbl->Cells[j++][n]=s.sprintf("%.6f",seph[i].vel[1]);
+		Tbl->Cells[j++][n]=s.sprintf("%.6f",seph[i].vel[2]);
+		Tbl->Cells[j++][n]=s.sprintf("%.7f",seph[i].acc[0]);
+		Tbl->Cells[j++][n]=s.sprintf("%.7f",seph[i].acc[1]);
+		Tbl->Cells[j++][n]=s.sprintf("%.7f",seph[i].acc[2]);
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",seph[i].af0*1E9);
+		Tbl->Cells[j++][n]=s.sprintf("%.4f",seph[i].af1*1E9);
 		n++;
 	}
-	Tbl->RowCount=n<=0?2:n+1;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::SetIonUtc(void)
+{
+	AnsiString label[]={"Parameter","Value"};
+	int i,width[]={220,380};
+	
+	Tbl->ColCount=2;
+	Tbl->RowCount=2;
+	for (i=0;i<Tbl->ColCount;i++) {
+		Tbl->ColWidths[i]=width[i]*FontScale/96;
+		Tbl->Cells[i][0]=label[i];
+		Tbl->Cells[i][1]="";
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::ShowIonUtc(void)
+{
+	double utc_gps[4],utc_glo[4],utc_gal[4],utc_qzs[4];
+	double ion_gps[8],ion_gal[4],ion_qzs[8];
+	gtime_t time;
+	AnsiString s;
+	double tow=0.0;
+	char tstr[64];
+	int i,j,k,leaps,week=0;
+	
+	rtksvrlock(&rtksvr);
+	time=rtksvr.rtk.sol.time;
+	for (i=0;i<4;i++) utc_gps[i]=rtksvr.nav.utc_gps[i];
+	for (i=0;i<4;i++) utc_glo[i]=rtksvr.nav.utc_glo[i];
+	for (i=0;i<4;i++) utc_gal[i]=rtksvr.nav.utc_gal[i];
+	for (i=0;i<4;i++) utc_qzs[i]=rtksvr.nav.utc_qzs[i];
+	for (i=0;i<8;i++) ion_gps[i]=rtksvr.nav.ion_gps[i];
+	for (i=0;i<4;i++) ion_gal[i]=rtksvr.nav.ion_gal[i];
+	for (i=0;i<8;i++) ion_qzs[i]=rtksvr.nav.ion_qzs[i];
+	leaps=rtksvr.nav.leaps;
+	rtksvrunlock(&rtksvr);
+	
+	Label->Caption="";
+	
+	Tbl->RowCount=17;
+	i=1;
+	
+	time2str(timeget(),tstr,3);
+	Tbl->Cells[0][i  ]="CPU Time (UTC)";
+	Tbl->Cells[1][i++]=s.sprintf("%s",tstr);
+	
+	if (time.time!=0) time2str(gpst2utc(time),tstr,3); else strcpy(tstr,"-");
+	Tbl->Cells[0][i  ]="Receiver Time (UTC)";
+	Tbl->Cells[1][i++]=s.sprintf("%s",tstr);
+	
+	if (time.time!=0) time2str(time,tstr,3); else strcpy(tstr,"-");
+	Tbl->Cells[0][i  ]="Receiver Time (GPST)";
+	Tbl->Cells[1][i++]=s.sprintf("%s",tstr);
+	
+	if (time.time!=0) tow=time2gpst(time,&week);
+	Tbl->Cells[0][i  ]="GPS Week/Time (s)";
+	Tbl->Cells[1][i++]=s.sprintf("%d,%.3f",week,tow);
+	
+	Tbl->Cells[0][i  ]="Leap Seconds (GPST-UTC) (s)";
+	Tbl->Cells[1][i++]=s.sprintf("%d",leaps);
+	
+	Tbl->Cells[0][i  ]="GPST-UTC Reference Week/Time (s)";
+	Tbl->Cells[1][i++]=s.sprintf("%.0f,%.0f",utc_gps[3],utc_gps[2]);
+	
+	Tbl->Cells[0][i  ]="GPST-UTC A0(ns),A1(ns/s)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f,%.6f",utc_gps[0]*1E9,utc_gps[1]*1E9);
+	
+	Tbl->Cells[0][i  ]="GST-GPS Reference Week/Time (s)";
+	Tbl->Cells[1][i++]=s.sprintf("%.0f,%.0f",utc_gal[3],utc_gal[2]);
+	
+	Tbl->Cells[0][i  ]="GST-GPS A0(ns),A1(ns/s)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f,%.6f",utc_gal[0]*1E9,utc_gal[1]*1E9);
+	
+	Tbl->Cells[0][i  ]="QZST-GPS Reference Week/Time (s)";
+	Tbl->Cells[1][i++]=s.sprintf("%.0f,%.0f",utc_qzs[3],utc_qzs[2]);
+	
+	Tbl->Cells[0][i  ]="QZST-GPS A0(ns),A1(ns/s)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f,%.6f",utc_qzs[0]*1E9,utc_qzs[1]*1E9);
+	
+	Tbl->Cells[0][i  ]="GPS Iono Parameters Alpha0-Alpha3";
+	Tbl->Cells[1][i++]=s.sprintf("%.5E,%.5E,%.5E,%.5E",ion_gps[0],ion_gps[1],ion_gps[2],ion_gps[3]);
+	
+	Tbl->Cells[0][i  ]="GPS Iono Parameters Beta0-Beta3";
+	Tbl->Cells[1][i++]=s.sprintf("%.5E,%.5E,%.5E,%.5E",ion_gps[4],ion_gps[5],ion_gps[6],ion_gps[7]);
+	
+	Tbl->Cells[0][i  ]="GALILEO Iono Parameters 0-2";
+	Tbl->Cells[1][i++]=s.sprintf("%.5E,%.5E,%.5E",ion_gal[0],ion_gal[1],ion_gal[2]);
+	
+	Tbl->Cells[0][i  ]="QZS Iono Parameters Alpha0-Alpha3";
+	Tbl->Cells[1][i++]=s.sprintf("%.5E,%.5E,%.5E,%.5E",ion_qzs[0],ion_qzs[1],ion_qzs[2],ion_qzs[3]);
+	
+	Tbl->Cells[0][i  ]="QZS Iono Parameters Beta0-Beta3";
+	Tbl->Cells[1][i++]=s.sprintf("%.5E,%.5E,%.5E,%.5E",ion_qzs[4],ion_qzs[5],ion_qzs[6],ion_qzs[7]);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMonitorDialog::SetStr(void)
@@ -1341,7 +1535,8 @@ void __fastcall TMonitorDialog::ShowSbsFast(void)
 	for (i=0;i<Tbl->RowCount;i++) {
 		j=0;
 		satp=sbssat.sat+i;
-		valid=fabs(timediff(time,satp->fcorr.t0)<=MAXSBSAGEF)&&satp->fcorr.t0.time;
+		valid=fabs(timediff(time,satp->fcorr.t0)<=MAXSBSAGEF)&&satp->fcorr.t0.time&&
+			  0<=satp->fcorr.udre-1&&satp->fcorr.udre-1<14;
 		satno2id(satp->sat,id);
 		Tbl->Cells[j++][i+1]=id;
 		Tbl->Cells[j++][i+1]=valid?"OK":"-";
@@ -1580,3 +1775,273 @@ void __fastcall TMonitorDialog::ShowRtcmSsr(void)
 		}
 	}
 }
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::SetLexMsg(void)
+{
+	AnsiString label[]={"Parameter","Value"};
+	int i,width[]={140,450};
+	
+	Tbl->ColCount=2;
+	Tbl->RowCount=2;
+	for (i=0;i<Tbl->ColCount;i++) {
+		Tbl->ColWidths[i]=width[i]*FontScale/96;
+		Tbl->Cells[i][0]=label[i];
+		Tbl->Cells[i][1]="";
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::ShowLexMsg(void)
+{
+	AnsiString s;
+	raw_t raw;
+	int i=1,j,k,format;
+	char tstr[64]="-",mstr[2048]="",*p;
+	
+	rtksvrlock(&rtksvr);
+	format=rtksvr.format[SelStr->ItemIndex];
+	raw=rtksvr.raw[SelStr->ItemIndex];
+	rtksvrunlock(&rtksvr);
+	
+	Label->Caption="";
+	
+	if (format==STRFMT_LEXR&&raw.time.time) time2str(raw.time,tstr,3);
+	
+	Tbl->RowCount=15;
+	
+	Tbl->Cells[0][i  ]="Receiver Time";
+	Tbl->Cells[1][i++]=tstr;
+	
+	Tbl->Cells[0][i  ]="Signal Tracking Status";
+	Tbl->Cells[1][i++]=s.sprintf("%d",raw.lexmsg.stat);
+	
+	Tbl->Cells[0][i  ]="Signal Tracking Time (s)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f",raw.lexmsg.ttt/1000.0);
+	
+	Tbl->Cells[0][i  ]="Signal Level (dBHz)";
+	Tbl->Cells[1][i++]=s.sprintf("%.1f",raw.lexmsg.snr*0.25);
+	
+	Tbl->Cells[0][i  ]="PRN Number";
+	Tbl->Cells[1][i++]=s.sprintf("%d",raw.lexmsg.prn);
+	
+	Tbl->Cells[0][i  ]="Message Type";
+	Tbl->Cells[1][i++]=s.sprintf("%d",raw.lexmsg.type);
+	
+	Tbl->Cells[0][i  ]="Alert Flag";
+	Tbl->Cells[1][i++]=s.sprintf("%d",raw.lexmsg.alert);
+	
+	for (j=0;j<7;j++) {
+		p=mstr;
+		for (k=0;k<32&&j*32+k<212;k++) {
+			p+=sprintf(p,"%02X%s",raw.lexmsg.msg[j*32+k],k%4==3?" ":"");
+		}
+		Tbl->Cells[0][i  ]=s.sprintf("Data Part (%d-%d)",j*32*8,
+									 (j*32+k)*8-1<1695?(j*32+k)*8-1:1694);
+		Tbl->Cells[1][i++]=mstr;
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::SetLexEph(void)
+{
+	AnsiString s,label[]={
+		"SAT","Status","Tof","Health","Toe","URA","PosX(m)","PosY(m)","PosZ(m)",
+		"VelX(m/s)","VelY(m/s)","VelZ(m/s)",
+		"AccX(m/s2)","AccY(m/s2)","AccZ(m/s2)",
+		"JerkX(m/s3)","JerkY(m/s3)","JerkZ(m/s3)",
+		"Af0(ns)","Af1(ns/s)","TGD(ns)",
+		"ISCL1C/A(ns)","ISCL2C(ns)","ISCL5I(ns)","ISCL5Q(ns)",
+		"ISCL1CP(ns)","ISCL1CD(ns)","ISCLEX(ns)"
+	};
+	int i,width[]={
+		25,30,115,35,115,25,80,80,80,80,80,80,80,80,80,80,80,80,60,50,50,50,
+		50,50,50,50,50,50
+	};
+	char *code;
+
+	Tbl->ColCount=28;
+	Tbl->RowCount=2;
+	for (i=0;i<28;i++) {
+		Tbl->ColWidths[i]=width[i]*FontScale/96;
+		Tbl->Cells[i][0]=label[i];
+		Tbl->Cells[i][1]="";
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::ShowLexEph(void)
+{
+	AnsiString s;
+	gtime_t time;
+	lexeph_t lexeph[MAXSAT];
+	int i,j,k,n,sys,valid;
+	char tstr[64],health[16],id[32],*p;
+
+	rtksvrlock(&rtksvr);
+	time=rtksvr.rtk.sol.time;
+	for (i=0;i<MAXSAT;i++) lexeph[i]=rtksvr.nav.lexeph[i];
+	rtksvrunlock(&rtksvr);
+	
+	Label->Caption="";
+	
+	for (i=0,n=1;i<MAXSAT;i++) {
+		
+		sys=satsys(i+1,NULL);
+		if (sys!=SYS_GPS&&sys!=SYS_QZS) continue;
+		j=0;
+		satno2id(i+1,id);
+		Tbl->Cells[j++][n]=id;
+		valid=lexeph[i].toe.time&&fabs(timediff(time,lexeph[i].toe))<=360.0;
+		Tbl->Cells[j++][n]=valid?"OK":"-";
+		
+		if (lexeph[i].tof.time==0) sprintf(tstr,"-");
+		else time2str(lexeph[i].tof,tstr,0);
+		Tbl->Cells[j++][n]=tstr;
+		
+		for (k=0,p=health;k<5;k++) {
+			p+=sprintf(p,"%d",(lexeph[i].health>>(4-k))&1);
+		}
+		Tbl->Cells[j++][n]=health;
+		
+		if (lexeph[i].toe.time==0) sprintf(tstr,"-");
+		else time2str(lexeph[i].toe,tstr,0);
+		Tbl->Cells[j++][n]=tstr;
+		
+		Tbl->Cells[j++][n]=s.sprintf("%d",lexeph[i].ura);
+		
+		for (k=0;k<3;k++) {
+			Tbl->Cells[j++][n]=s.sprintf("%.3f",lexeph[i].pos[k]);
+		}
+		for (k=0;k<3;k++) {
+			Tbl->Cells[j++][n]=s.sprintf("%.6f",lexeph[i].vel[k]);
+		}
+		for (k=0;k<3;k++) {
+			Tbl->Cells[j++][n]=s.sprintf("%.6E",lexeph[i].acc[k]);
+		}
+		for (k=0;k<3;k++) {
+			Tbl->Cells[j++][n]=s.sprintf("%.6E",lexeph[i].jerk[k]);
+		}
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",lexeph[i].af0*1E9);
+		Tbl->Cells[j++][n]=s.sprintf("%.4f",lexeph[i].af1*1E9);
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",lexeph[i].tgd*1E9);
+		for (k=0;k<7;k++) {
+			Tbl->Cells[j++][n]=s.sprintf("%.1f",lexeph[i].isc[k]*1E9);
+		}
+		n++;
+	}
+	Tbl->RowCount=n;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::SetLexIon(void)
+{
+	AnsiString label[]={"Parameter","Value"};
+	int i,width[]={220,380};
+	
+	Tbl->ColCount=2;
+	Tbl->RowCount=2;
+	for (i=0;i<Tbl->ColCount;i++) {
+		Tbl->ColWidths[i]=width[i]*FontScale/96;
+		Tbl->Cells[i][0]=label[i];
+		Tbl->Cells[i][1]="";
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::ShowLexIon(void)
+{
+	AnsiString s;
+	lexion_t lexion;
+	int i=1,j;
+	char tstr[64]="-";
+	
+	rtksvrlock(&rtksvr);
+	lexion=rtksvr.nav.lexion;
+	rtksvrunlock(&rtksvr);
+	
+	Label->Caption="";
+	
+	if (lexion.t0.time) time2str(lexion.t0,tstr,3);
+	
+	Tbl->RowCount=10;
+	
+	Tbl->Cells[0][i  ]="Reference Time (GPST)";
+	Tbl->Cells[1][i++]=tstr;
+	
+	Tbl->Cells[0][i  ]="Valid Time Tspan (s)";
+	Tbl->Cells[1][i++]=s.sprintf("%.1f",lexion.tspan);
+	
+	Tbl->Cells[0][i  ]="Origin of Approx Function Lat/Lon (deg)";
+	Tbl->Cells[1][i++]=s.sprintf("%.4f %.4f",lexion.pos0[0]*R2D,lexion.pos0[1]*R2D);
+	
+	Tbl->Cells[0][i  ]="0-0 Degree Coefficient E00 (m)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f",lexion.coef[0][0]);
+	
+	Tbl->Cells[0][i  ]="1-1 Degree Coefficient E10 (m/rad)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f",lexion.coef[1][0]);
+	
+	Tbl->Cells[0][i  ]="2-0 Degree Coefficient E20 (m/rad^2)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f",lexion.coef[2][0]);
+	
+	Tbl->Cells[0][i  ]="0-1 Degree Coefficient E01 (m/rad)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f",lexion.coef[0][1]);
+	
+	Tbl->Cells[0][i  ]="1-1 Degree Coefficient E11 (m/rad^2)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f",lexion.coef[1][1]);
+	
+	Tbl->Cells[0][i  ]="2-1 Degree Coefficient E21 (m/rad^3)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f",lexion.coef[2][1]);
+}
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::SetIonCorr(void)
+{
+	AnsiString s;
+	int i,j;
+	
+	Tbl->ColCount=(IONLON2-IONLON1)/DIONLON+2;
+	Tbl->RowCount=(IONLAT1-IONLAT2)/DIONLAT+2;
+	
+	Tbl->ColWidths[0]=40*FontScale/96;
+	Tbl->Cells[0][0]="";
+	
+	for (i=1;i<Tbl->ColCount;i++) {
+		Tbl->ColWidths[i]=40*FontScale/96;
+		Tbl->Cells[i][0]=s.sprintf("%.0fE",IONLON1+(i-1)*DIONLON);
+	}
+	for (j=1;j<Tbl->RowCount;j++) {
+		Tbl->Cells[0][j]=s.sprintf("%.0fN",IONLAT1-(j-1)*DIONLAT);
+	}
+	for (i=1;i<Tbl->ColCount;i++)
+	for (j=1;j<Tbl->RowCount;j++) Tbl->Cells[i][j]="-";
+}
+//---------------------------------------------------------------------------
+void __fastcall TMonitorDialog::ShowIonCorr(void)
+{
+	AnsiString s;
+	gtime_t time;
+	nav_t nav={0};
+	double lat,lon,pos[3]={0},ion,var,azel[]={0.0,PI/2.0};
+	int i,j,ionoopt;
+	
+	rtksvrlock(&rtksvr);
+	time=rtksvr.rtk.sol.time;
+	for (i=0;i<8;i++) nav.ion_gps[i]=rtksvr.nav.ion_gps[i];
+	for (i=0;i<4;i++) nav.ion_gal[i]=rtksvr.nav.ion_gal[i];
+	for (i=0;i<8;i++) nav.ion_qzs[i]=rtksvr.nav.ion_qzs[i];
+	for (i=0;i<MAXBAND+1;i++) nav.sbsion[i]=rtksvr.nav.sbsion[i];
+	nav.lexion=rtksvr.nav.lexion;
+	rtksvrunlock(&rtksvr);
+	
+	Label->Caption="Vertical L1 Ionospheric Delay (m)";
+	
+	ionoopt=SelIon->ItemIndex;
+	
+	for (i=1;i<Tbl->ColCount;i++) 
+	for (j=1;j<Tbl->RowCount;j++) {
+		pos[0]=(IONLAT1-(j-1)*DIONLAT)*D2R;
+		pos[1]=(IONLON1+(i-1)*DIONLON)*D2R;
+		
+		if (!ionocorr(time,&nav,0,pos,azel,ionoopt,&ion,&var)||ion==0.0) {
+			Tbl->Cells[i][j]="-";
+		}
+		else {
+			Tbl->Cells[i][j]=s.sprintf("%.2f",ion);
+		}
+	}
+}
+//---------------------------------------------------------------------------

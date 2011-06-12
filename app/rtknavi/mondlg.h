@@ -30,6 +30,8 @@ __published:
 	TSpeedButton *BtnClear;
 	TComboBox *SelEph;
 	TComboBox *SelStr;
+	TComboBox *SelSat;
+	TComboBox *SelIon;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall BtnCloseClick(TObject *Sender);
@@ -57,9 +59,14 @@ private:
 	void __fastcall SetSbsIono(void);
 	void __fastcall SetSbsFast(void);
 	void __fastcall SetSbsNav(void);
+	void __fastcall SetIonUtc(void);
 	void __fastcall SetRtcm(void);
 	void __fastcall SetRtcmDgps(void);
 	void __fastcall SetRtcmSsr(void);
+	void __fastcall SetLexMsg(void);
+	void __fastcall SetLexEph(void);
+	void __fastcall SetLexIon(void);
+	void __fastcall SetIonCorr(void);
 	void __fastcall ShowRtk(void);
 	void __fastcall ShowSat(void);
 	void __fastcall ShowEst(void);
@@ -67,8 +74,9 @@ private:
 	void __fastcall ShowObs(void);
 	void __fastcall ShowNav(void);
 	void __fastcall ShowGnav(void);
-	void __fastcall ShowStr(void);
 	void __fastcall ShowSbsMsg(void);
+	void __fastcall ShowIonUtc(void);
+	void __fastcall ShowStr(void);
 	void __fastcall ShowSbsLong(void);
 	void __fastcall ShowSbsIono(void);
 	void __fastcall ShowSbsFast(void);
@@ -76,6 +84,10 @@ private:
 	void __fastcall ShowRtcm(void);
 	void __fastcall ShowRtcmDgps(void);
 	void __fastcall ShowRtcmSsr(void);
+	void __fastcall ShowLexMsg(void);
+	void __fastcall ShowLexEph(void);
+	void __fastcall ShowLexIon(void);
+	void __fastcall ShowIonCorr(void);
 	void __fastcall AddConsole(unsigned char *msg, int len, int mode);
 	void __fastcall ViewConsole(void);
 public:

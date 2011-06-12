@@ -25,10 +25,10 @@ __fastcall TRefDialog::TRefDialog(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TRefDialog::FormShow(TObject *Sender)
 {
+	FILE *fp;
 	int width[]={30,80,90,65,40,70,55};
 	
 	FontScale=Screen->PixelsPerInch;
-	FormatS->ItemIndex=Format;
 	for (int i=0;i<7;i++) {
 		StaList->ColWidths[i]=width[i]*FontScale/96;
 	}
@@ -40,7 +40,7 @@ void __fastcall TRefDialog::FormShow(TObject *Sender)
 	StaList->Cells[4][0]=" Id";
 	StaList->Cells[5][0]=" Name";
 	StaList->Cells[6][0]=" Dist(km)";
-	if (!Format) LoadList(); else LoadSinex();
+	LoadList();
 	if (norm(RovPos,3)>0.0) SortList(6);
 }
 //---------------------------------------------------------------------------
@@ -67,16 +67,64 @@ void __fastcall TRefDialog::BtnLoadClick(TObject *Sender)
 	OpenDialog->FileName=StaPosFile;
 	if (OpenDialog->Execute()!=mrOk) return;
 	StaPosFile=OpenDialog->FileName;
-	if (!Format) LoadList(); else LoadSinex();
+	LoadList();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRefDialog::BtnFindClick(TObject *Sender)
+{
+	FindList();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRefDialog::FindStrKeyPress(TObject *Sender, char &Key)
+{
+	if (Key=='\r') FindList();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRefDialog::FindList(void)
+{
+	TGridRect r=StaList->Selection;
+	int i,j,n=StaList->RowCount;
+	int nmax=StaList->Height/StaList->DefaultRowHeight-1;
+	AnsiString str=FindStr->Text;
+	
+	if (n<=1) return;
+	i=r.Top<0||r.Top>=n?0:r.Top;
+	j=i>=n?1:i+1;
+	for (;;) {
+		if (StaList->Cells[4][j].Pos(str)==1||
+		    StaList->Cells[5][j].Pos(str)==1) {
+			r.Top=j; r.Bottom=j; r.Left=0; r.Right=6;
+			StaList->Selection=r;
+			if (j<StaList->TopRow+1||j>=StaList->TopRow+nmax) {
+				if (j<nmax-1) StaList->TopRow=1;
+				else if (j>=n-nmax) StaList->TopRow=n-nmax;
+				else StaList->TopRow=j-nmax/2;
+			}
+			break;
+		}
+		if (i==j) break;
+		if (++j>=n) j=1;
+	}
 }
 //---------------------------------------------------------------------------
 void __fastcall TRefDialog::LoadList(void)
 {
 	FILE *fp;
-	char buff[256],code[256],name[256],*p;
+	char buff[256]="",code[256],name[256],*p;
 	double pos[3];
+	int format,n=0;
+	
+	// check format
 	if (!(fp=fopen(StaPosFile.c_str(),"r"))) return;
-	int n=0;
+	fgets(buff,sizeof(buff),fp);
+	format=strstr(buff,"%=SNX")==buff;
+	fclose(fp);
+	
+	if (format) {
+		LoadSinex();
+		return;
+	}
+	if (!(fp=fopen(StaPosFile.c_str(),"r"))) return;
 	while (fgets(buff,sizeof(buff),fp)) {
 		if (p=strchr(buff,'%')) *p='\0';
 		pos[0]=pos[1]=pos[2]=0.0; code[0]='\0'; name[0]='\0';
@@ -166,7 +214,7 @@ void __fastcall TRefDialog::AddRef(int n, double *pos, const char *code,
 int __fastcall TRefDialog::InputRef(void)
 {
 	int n=StaList->RowCount;
-	TGridRect r=StaList->Selection; if (r.Top<0||n-1<=r.Top) return 0;
+	TGridRect r=StaList->Selection; if (r.Top<1||n<=r.Top) return 0;
 	Pos[0]=str2dbl(StaList->Cells[1][r.Top]);
 	Pos[1]=str2dbl(StaList->Cells[2][r.Top]);
 	Pos[2]=str2dbl(StaList->Cells[3][r.Top]);
@@ -191,12 +239,6 @@ void __fastcall TRefDialog::UpdateDist(void)
 		AnsiString s;
 		StaList->Cells[6][i]=s.sprintf("%6.1f",norm(rr,3)/1E3);
 	}
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TRefDialog::FormatSChange(TObject *Sender)
-{
-	Format=FormatS->ItemIndex;	
 }
 //---------------------------------------------------------------------------
 

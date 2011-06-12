@@ -64,6 +64,7 @@ void utest2(void)
 /* tropmodel */
 void utest3(void)
 {
+    gtime_t time={0};
     double pos1 []={ 35*D2R, 140*D2R, 100.0};
     double pos2 []={-80*D2R,-170*D2R,1000.0};
     double pos3 []={-80*D2R,-170*D2R,100000.0};
@@ -73,22 +74,22 @@ void utest3(void)
     double azel3[]={190*D2R,-10*D2R};
     double dtrp;
     
-    dtrp=tropmodel(pos1,azel1,0.5);
+    dtrp=tropmodel(time,pos1,azel1,0.5);
         assert(fabs(dtrp-2.44799870144088)<1e-8);
     
-    dtrp=tropmodel(pos1,azel2,0.5);
+    dtrp=tropmodel(time,pos1,azel2,0.5);
         assert(fabs(dtrp-45.1808916506163)<1e-8);
     
-    dtrp=tropmodel(pos2,azel1,0.5);
+    dtrp=tropmodel(time,pos2,azel1,0.5);
         assert(fabs(dtrp-2.17295817298152)<1e-8);
     
-    dtrp=tropmodel(pos1,azel3,0.0);
+    dtrp=tropmodel(time,pos1,azel3,0.0);
         assert(fabs(dtrp-0.00000000000000)<1e-8);
     
-    dtrp=tropmodel(pos3,azel1,0.0);
+    dtrp=tropmodel(time,pos3,azel1,0.0);
         assert(fabs(dtrp-0.00000000000000)<1e-8);
     
-    dtrp=tropmodel(pos4,azel1,0.0);
+    dtrp=tropmodel(time,pos4,azel1,0.0);
         assert(fabs(dtrp-0.00000000000000)<1e-8);
     
     printf("%s utest3 : OK\n",__FILE__);

@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="C:\rtklib_2.1\src"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO"
+				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;NFREQ=3"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -61,6 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\convbin.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -117,7 +118,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\..\..\src"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO"
+				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;NFREQ=3"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -137,6 +138,7 @@
 				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)\convbin.exe"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -186,6 +188,14 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\rcv\crescent.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\rcv\gw10.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\rcv\javad.c"
 				>
 			</File>
 			<File

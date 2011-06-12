@@ -16,8 +16,8 @@ TFont *TTextViewer::FontD;
 __fastcall TTextViewer::TTextViewer(TComponent* Owner)
 	: TForm(Owner)
 {
-	TextBuff=new TStringList;
 	Option=1;
+	TextStr=NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTextViewer::FormShow(TObject *Sender)
@@ -30,7 +30,6 @@ void __fastcall TTextViewer::FormShow(TObject *Sender)
 		BtnReload->Visible=false;
 		BtnRead  ->Caption="Save...";
 	}
-	SearchLine=-1;
 	UpdateText();
 }
 //---------------------------------------------------------------------------
@@ -41,15 +40,15 @@ void __fastcall TTextViewer::BtnReloadClick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TTextViewer::BtnReadClick(TObject *Sender)
 {
-	if (BtnRead->Caption=="Read...") {
-		OpenDialog->FileName=File;
-		if (!OpenDialog->Execute()) return;
-		Read(OpenDialog->FileName);
-	}
-	else {
+	if (BtnRead->Caption=="Save...") {
 		SaveDialog->FileName=File;
 		if (!SaveDialog->Execute()) return;
 		Save(SaveDialog->FileName);
+	}
+	else {
+		OpenDialog->FileName=File;
+		if (!OpenDialog->Execute()) return;
+		Read(OpenDialog->FileName);
 	}
 }
 //---------------------------------------------------------------------------
@@ -66,14 +65,42 @@ void __fastcall TTextViewer::BtnCloseClick(TObject *Sender)
 	Release();
 }
 //---------------------------------------------------------------------------
+void __fastcall TTextViewer::BtnFindClick(TObject *Sender)
+{
+	char *p,*str=FindStr->Text.c_str();
+	
+	if (!TextStr) return;
+	
+	if (Text->SelLength>0) p=TextStr+Text->SelStart+1;
+	else p=TextStr+Text->SelStart;
+	
+	if ((p=strstr(p,str))) {
+		Text->SelStart=p-TextStr;
+		Text->SelLength=strlen(str);
+	}
+	else {
+		Text->SelStart=0;
+		Text->SelLength=0;
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TTextViewer::FindStrKeyPress(TObject *Sender, char &Key)
+{
+	if (Key=='\r') BtnFindClick(Sender);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTextViewer::Read(AnsiString file)
 {
 	char s[256],*path[]={s};
+	
 	if (expath(file.c_str(),path,1)<1) return;
 	AnsiString str(path[0]);
 	Screen->Cursor=crHourGlass;
 	try {
 		Text->Lines->LoadFromFile(str);
+		
+		// read text for search
+		ReadText(str);
 	}
 	catch (...) {
 		Screen->Cursor=crDefault;
@@ -82,6 +109,26 @@ void __fastcall TTextViewer::Read(AnsiString file)
 	Screen->Cursor=crDefault;
 	Caption=str;
 	File=file;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTextViewer::ReadText(AnsiString file)
+{
+	FILE *fp;
+	int len,n=0,nmax=0;
+	char buff[1024];
+	
+	free(TextStr); TextStr=NULL;
+	
+	if (!(fp=fopen(file.c_str(),"rb"))) return;
+		
+	while (fgets(buff,sizeof(buff),fp)) {
+		len=strlen(buff);
+		if (n+len+1>=nmax) nmax=nmax<=0?16384:nmax*2;
+		if (!(TextStr=(char *)realloc(TextStr,nmax))) break;
+		strcpy(TextStr+n,buff);
+		n+=len;
+	}
+	fclose(fp);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTextViewer::Save(AnsiString file)

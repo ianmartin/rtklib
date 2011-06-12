@@ -203,6 +203,8 @@
         <FILE FILENAME="..\..\src\rcv\novatel.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="novatel" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="..\..\src\rcv\crescent.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="crescent" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="..\..\src\sbas.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="sbas" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rcv\gw10.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="gw10" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rcv\javad.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="javad" FORMNAME="" DESIGNCLASS=""/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>

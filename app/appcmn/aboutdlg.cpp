@@ -21,7 +21,6 @@ void __fastcall TAboutDialog::FormShow(TObject *Sender)
 	if (IconIndex>0) icon[IconIndex-1]->Visible=true;
 	LabelAbout->Caption=About;
 	LabelVer->Caption=s.sprintf("with RTKLIB ver.%s",VER_RTKLIB);
-	LabelCopyright->Caption=
-		"Copyright (C) 2007-2010 by T.Takasu\nAll rights reserved.";
+	LabelCopyright->Caption=COPYRIGHT_RTKLIB;
 }
 //---------------------------------------------------------------------------

@@ -3,7 +3,7 @@ object KeyDialog: TKeyDialog
   Top = 0
   BorderStyle = bsDialog
   Caption = 'Keyword Replacement in File Path'
-  ClientHeight = 121
+  ClientHeight = 133
   ClientWidth = 316
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -13,6 +13,7 @@ object KeyDialog: TKeyDialog
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
@@ -59,7 +60,7 @@ object KeyDialog: TKeyDialog
   end
   object Label7: TLabel
     Left = 12
-    Top = 96
+    Top = 98
     Width = 18
     Height = 13
     Caption = '%D'
@@ -211,9 +212,37 @@ object KeyDialog: TKeyDialog
     Height = 13
     Caption = ': 12H Hour (00,12)'
   end
+  object Label29: TLabel
+    Left = 12
+    Top = 112
+    Width = 15
+    Height = 13
+    Caption = '%r'
+  end
+  object Label30: TLabel
+    Left = 36
+    Top = 110
+    Width = 55
+    Height = 13
+    Caption = ': Station ID'
+  end
+  object Label31: TLabel
+    Left = 156
+    Top = 110
+    Width = 17
+    Height = 13
+    Caption = '%b'
+  end
+  object Label32: TLabel
+    Left = 180
+    Top = 110
+    Width = 81
+    Height = 13
+    Caption = ': Base Station ID'
+  end
   object BtnOk: TButton
     Left = 280
-    Top = 98
+    Top = 110
     Width = 33
     Height = 21
     Caption = '&OK'

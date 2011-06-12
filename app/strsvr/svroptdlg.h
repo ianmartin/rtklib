@@ -19,7 +19,6 @@ __published:
 	TEdit *SvrCycle;
 	TLabel *Label3;
 	TEdit *DataTimeout;
-	TLabel *Label5;
 	TLabel *Label6;
 	TEdit *ConnectInterval;
 	TEdit *AvePeriodRate;
@@ -35,6 +34,11 @@ __published:
 	TEdit *LocalDir;
 	TButton *BtnLocalDir;
 	TLabel *Label4;
+	TLabel *Label9;
+	TEdit *FileSwapMarginE;
+	TLabel *Label5;
+	TLabel *Label10;
+	TEdit *ProxyAddr;
 	void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnPosClick(TObject *Sender);
@@ -43,8 +47,8 @@ __published:
 private:
 	void __fastcall UpdateEnable(void);
 public:
-	AnsiString StaPosFile,ExeDirectory,LocalDirectory;
-	int SvrOpt[6],TraceLevel,NmeaReq;
+	AnsiString StaPosFile,ExeDirectory,LocalDirectory,ProxyAddress;
+	int SvrOpt[6],TraceLevel,NmeaReq,FileSwapMargin;
 	double NmeaPos[3];
 	__fastcall TSvrOptDialog(TComponent* Owner);
 };

@@ -47,6 +47,8 @@ public:
 	void DrawAxis(int label, int glabel);
 	void DrawMark(TPoint p, int mark, TColor color, int size, int rot);
 	void DrawMark(double x, double y, int mark, TColor color, int size, int rot);
+	void DrawMarks(const double *x, const double *y, const TColor *color, int n,
+				   int mark, int size, int rot);
 	void DrawCircle(TPoint p, TColor color, int rx, int ry, int style);
 	void DrawCircle(double x, double y, TColor color, double rx, double ry, int style);
 	void DrawText(double x, double y, AnsiString str, TColor color, int ha,
@@ -55,6 +57,7 @@ public:
 		int rot);
 	void DrawPoly(TPoint *p, int n, TColor color, int style);
 	void DrawPoly(double *x, double *y, int n, TColor color, int style);
+	void DrawPolyline(TPoint *p, int n);
 	void DrawSkyPlot(TPoint p, TColor color1, TColor color2, int size);
 	void DrawSkyPlot(double x, double y, TColor color1, TColor color2, double size);
 };

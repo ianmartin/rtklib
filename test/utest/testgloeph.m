@@ -14,6 +14,8 @@ dpos(:,4)=dpos(:,4)-mean(dpos(:,4));
 
 figure('color','w'), hold on, box on, grid on
 plot(time/3600,dpos)
+plot(time(31:60:end)/3600,dpos(31:60:end,:),'.')
+
 xlabel('time (hr)');
 ylabel('error (m)');
 xlim(time([1,end])/3600);

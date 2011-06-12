@@ -4,6 +4,9 @@ cd ..
 cd rtknavi
 call install.bat
 cd ..
+cd rtknavi_mkl
+call install.bat
+cd ..
 cd rtkplot
 call install.bat
 cd ..

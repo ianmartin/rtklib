@@ -21,6 +21,8 @@ USEFORM("..\appcmn\console.cpp", Console);
 USEFORM("..\appcmn\viewer.cpp", TextViewer);
 USEFORM("..\appcmn\vieweropt.cpp", ViewerOptDialog);
 USEFORM("pntdlg.cpp", PntDialog);
+USEFORM("mapdlg.cpp", MapAreaDialog);
+USEFORM("..\appcmn\confdlg.cpp", ConfDialog);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -41,10 +43,11 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->CreateForm(__classid(TCmdOptDialog), &CmdOptDialog);
 		Application->CreateForm(__classid(TFileOptDialog), &FileOptDialog);
 		Application->CreateForm(__classid(TKeyDialog), &KeyDialog);
-		Application->CreateForm(__classid(TConsole), &Console);
 		Application->CreateForm(__classid(TTextViewer), &TextViewer);
 		Application->CreateForm(__classid(TViewerOptDialog), &ViewerOptDialog);
 		Application->CreateForm(__classid(TPntDialog), &PntDialog);
+		Application->CreateForm(__classid(TMapAreaDialog), &MapAreaDialog);
+		Application->CreateForm(__classid(TConfDialog), &ConfDialog);
 		Application->Run();
 	}
 	catch (Exception &exception)

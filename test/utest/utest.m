@@ -1,5 +1,6 @@
 function utest
 % matlab script for rtklib unit test
+% after executing utest for rtklib, execute it
 % need gt 0.6.4
 
 testpeph1

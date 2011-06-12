@@ -1,5 +1,4 @@
 //---------------------------------------------------------------------------
-
 #ifndef conndlgH
 #define conndlgH
 //---------------------------------------------------------------------------
@@ -16,12 +15,12 @@ class TConnectDialog : public TForm
 __published:
 	TButton *BtnOk;
 	TButton *BtnCancel;
-	TComboBox *SelStream;
-	TButton *BtnOpt;
+	TComboBox *SelStream1;
+	TButton *BtnOpt1;
 	TLabel *Label1;
 	TLabel *Label2;
-	TComboBox *SolFormat;
-	TButton *BtnCmd;
+	TComboBox *SolFormat1;
+	TButton *BtnCmd1;
 	TLabel *Label3;
 	TLabel *Label4;
 	TComboBox *TimeFormS;
@@ -33,21 +32,36 @@ __published:
 	TEdit *TimeOutTimeE;
 	TEdit *ReConnTimeE;
 	TLabel *Label8;
-	void __fastcall BtnOptClick(TObject *Sender);
+	TComboBox *SelStream2;
+	TButton *BtnOpt2;
+	TButton *BtnCmd2;
+	TComboBox *SolFormat2;
+	TLabel *Label9;
+	TLabel *Label10;
+	void __fastcall BtnOpt1Click(TObject *Sender);
 	void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
-	void __fastcall BtnCmdClick(TObject *Sender);
-	void __fastcall SelStreamChange(TObject *Sender);
-	void __fastcall SolFormatChange(TObject *Sender);
+	void __fastcall BtnCmd1Click(TObject *Sender);
+	void __fastcall SelStream1Change(TObject *Sender);
+	void __fastcall SolFormat1Change(TObject *Sender);
+	void __fastcall BtnOpt2Click(TObject *Sender);
+	void __fastcall BtnCmd2Click(TObject *Sender);
+	void __fastcall SolFormat2Change(TObject *Sender);
+	void __fastcall SelStream2Change(TObject *Sender);
 private:
-	void __fastcall SerialOpt(int opt);
-	void __fastcall TcpOpt(int opt);
-	void __fastcall FileOpt(int opt);
+	void __fastcall SerialOpt1(int opt);
+	void __fastcall SerialOpt2(int opt);
+	void __fastcall TcpOpt1(int opt);
+	void __fastcall TcpOpt2(int opt);
+	void __fastcall FileOpt1(int opt);
+	void __fastcall FileOpt2(int opt);
 	void __fastcall UpdateEnable(void);
 public:
-	int Stream,Format,CmdEna[2],TimeForm,DegForm,TimeOutTime,ReConnTime;
-	AnsiString Path,Paths[4],TcpHistory[MAXHIST],TcpMntpHist[MAXHIST];
-	AnsiString Cmds[2],FieldSep;
+	int Stream1,Stream2,Format1,Format2,CmdEna1[2],CmdEna2[2];
+	int TimeForm,DegForm,TimeOutTime,ReConnTime;
+	AnsiString Path,Paths1[4],Paths2[4];
+	AnsiString TcpHistory[MAXHIST],TcpMntpHist[MAXHIST];
+	AnsiString Cmds1[2],Cmds2[2],FieldSep;
 	__fastcall TConnectDialog(TComponent* Owner);
 };
 //---------------------------------------------------------------------------

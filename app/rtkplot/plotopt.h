@@ -86,7 +86,7 @@ __published:
 	TComboBox *HideLowSat;
 	TPanel *Panel1;
 	TLabel *FontLabel;
-	TLabel *Label15;
+	TLabel *LabelFont;
 	TLabel *Label26;
 	TComboBox *ElMaskP;
 	TLabel *LabelRefPos;
@@ -107,6 +107,15 @@ __published:
 	TCheckBox *NavSys6;
 	TEdit *QcCmd;
 	TLabel *Label30;
+	TLabel *Label31;
+	TComboBox *RcvPos;
+	TLabel *Label32;
+	TPanel *MColor7;
+	TPanel *MColor8;
+	TPanel *MColor9;
+	TPanel *MColor10;
+	TPanel *MColor11;
+	TPanel *MColor12;
 	void __fastcall BtnOKClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnColor1Click(TObject *Sender);
@@ -119,7 +128,10 @@ __published:
 	void __fastcall MColorClick(TObject *Sender);
 	void __fastcall BtnFontClick(TObject *Sender);
 	void __fastcall BtnQcCmdClick(TObject *Sender);
+	void __fastcall RcvPosChange(TObject *Sender);
 private:
+	TFont *FontOpt;
+	void __fastcall UpdateFont(void);
 	void __fastcall UpdateEnable(void);
 public:
 	TPlot *Plot;

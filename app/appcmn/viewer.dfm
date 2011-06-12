@@ -76,6 +76,23 @@ object TextViewer: TTextViewer
         OnClick = BtnOptClick
       end
     end
+    object FindStr: TEdit
+      Left = 14
+      Top = 1
+      Width = 107
+      Height = 21
+      TabOrder = 1
+      OnKeyPress = FindStrKeyPress
+    end
+    object BtnFind: TButton
+      Left = 122
+      Top = 2
+      Width = 31
+      Height = 19
+      Caption = 'Find'
+      TabOrder = 2
+      OnClick = BtnFindClick
+    end
   end
   object Text: TRichEdit
     Left = 0
@@ -86,6 +103,7 @@ object TextViewer: TTextViewer
     BevelInner = bvNone
     BevelOuter = bvNone
     BorderStyle = bsNone
+    HideSelection = False
     Lines.Strings = (
       'No Text')
     ReadOnly = True

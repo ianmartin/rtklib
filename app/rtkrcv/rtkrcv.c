@@ -1,15 +1,16 @@
 /*------------------------------------------------------------------------------
 * rtkrcv.c : rtk-gps/gnss receiver console ap
 *
-*          Copyright (C) 2009-2010 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2009-2011 by T.TAKASU, All rights reserved.
 *
 * notes   :
 *     current version does not support win32 without pthread library
 *
 * version : $Revision:$ $Date:$
-* history : 2009/12/13 1.0 new
-*           2010/07/18 1.1 add option -m
-*           2010/08/12 1.2 fix bug on ftp/http
+* history : 2009/12/13 1.0  new
+*           2010/07/18 1.1  add option -m
+*           2010/08/12 1.2  fix bug on ftp/http
+*           2011/01/22 1.3  add option misc-proxyaddr,misc-fswapmargin
 *-----------------------------------------------------------------------------*/
 #ifndef WIN32
 #define _POSIX_C_SOURCE 2
@@ -119,7 +120,7 @@ static int reconnect    =10000;         /* reconnect interval (ms) */
 static int nmeacycle    =5000;          /* nmea request cycle (ms) */
 static int buffsize     =32768;         /* input buffer size (bytes) */
 static int navmsgsel    =0;             /* navigation mesaage select */
-static int sbssatsel    =0;             /* sbas satellite select */
+static char proxyaddr[256]="";          /* http/ntrip proxy */
 static int nmeareq      =0;             /* nmea request type (0:off,1:lat/lon,2:single) */
 static double nmeapos[] ={0,0};         /* nmea position (lat/lon) (deg) */
 static char rcvcmds[3][MAXSTR]={""};    /* receiver commands files */
@@ -129,6 +130,7 @@ static int modflgr[256] ={0};           /* modified flags of receiver options */
 static int modflgs[256] ={0};           /* modified flags of system options */
 static int moniport     =0;             /* monitor port */
 static int keepalive    =0;             /* keep alive flag */
+static int fswapmargin  =30;            /* file swap margin (s) */
 
 static prcopt_t prcopt;                 /* processing options */
 static solopt_t solopt;                 /* solution options */
@@ -175,10 +177,10 @@ static const char *pathopts[]={         /* path options help */
 #define FLGOPT  "0:off,1:std+2:age/ratio/ns"
 #define ISTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,7:ntripcli,8:ftp,9:http"
 #define OSTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,6:ntripsvr"
-#define FMTOPT  "0:rtcm2,1:rtcm3,2:oem4,3:oem3,4:ubx,5:ss2,6:hemis,7:skytraq,8:sp3"
+#define FMTOPT  "0:rtcm2,1:rtcm3,2:oem4,3:oem3,4:ubx,5:ss2,6:hemis,7:skytraq,8:gw10,9:javad,15:sp3"
 #define NMEOPT  "0:off,1:latlon,2:single"
 #define SOLOPT  "0:llh,1:xyz,2:enu,3:nmea"
-#define MSGOPT  "0:all,1:rover,1:base,2:corr"
+#define MSGOPT  "0:all,1:rover,2:base,3:corr"
 
 static opt_t rcvopts[]={
     {"console-passwd",  2,  (void *)passwd,              ""     },
@@ -217,6 +219,9 @@ static opt_t rcvopts[]={
     {"misc-nmeacycle",  0,  (void *)&nmeacycle,          "ms"   },
     {"misc-buffsize",   0,  (void *)&buffsize,           "bytes"},
     {"misc-navmsgsel",  3,  (void *)&navmsgsel,          MSGOPT },
+    {"misc-proxyaddr",  2,  (void *)proxyaddr,           ""     },
+    {"misc-fswapmargin",0,  (void *)&fswapmargin,        "s"    },
+    
     {"misc-startcmd",   2,  (void *)startcmd,            ""     },
     {"misc-stopcmd",    2,  (void *)stopcmd,             ""     },
     
@@ -690,11 +695,12 @@ static int startsvr(vt_t *vt)
 {
     double pos[3],npos[3];
     char s[3][MAXRCVCMD]={"","",""},*cmds[]={NULL,NULL,NULL};
+    char *ropts[]={"","",""};
     char *paths[]={
         strpath[0],strpath[1],strpath[2],strpath[3],strpath[4],strpath[5],
         strpath[6],strpath[7]
     };
-    int i,ret,stropt[4];
+    int i,ret,stropt[8]={0};
     
     trace(3,"startsvr:\n");
     
@@ -734,12 +740,14 @@ static int startsvr(vt_t *vt)
     stropt[1]=reconnect;
     stropt[2]=1000;
     stropt[3]=buffsize;
+    stropt[4]=fswapmargin;
     strsetopt(stropt);
     
     if (strfmt[2]==8) strfmt[2]=STRFMT_SP3;
     
-    /* set temporaly directory for ftp/http */
+    /* set ftp/http directory and proxy */
     strsetdir(filopt.tempdir);
+    strsetproxy(proxyaddr);
     
     /* execute start command */
     if (*startcmd&&(ret=system(startcmd))) {
@@ -748,8 +756,7 @@ static int startsvr(vt_t *vt)
     }
     /* start rtk server */
     if (!rtksvrstart(&svr,svrcycle,buffsize,strtype,paths,strfmt,navmsgsel,
-                     sbssatsel,cmds,nmeacycle,nmeareq,npos,&prcopt,&solopt,
-                     &moni)) {
+                     cmds,ropts,nmeacycle,nmeareq,npos,&prcopt,&solopt,&moni)) {
         trace(2,"rtk server start error\n");
         printvt(vt,"rtk server start error\n");
         return 0;
@@ -1101,7 +1108,7 @@ static void probserv(vt_t *vt)
         for (j=0;j<2;j++) printvt(vt,"%12.2f",obs[i].P[j]);
         for (j=0;j<2;j++) printvt(vt,"%13.2f",obs[i].L[j]);
         for (j=0;j<2;j++) printvt(vt,"%8.2f" ,obs[i].D[j]);
-        for (j=0;j<2;j++) printvt(vt,"%3d"   ,obs[i].SNR[j]);
+        for (j=0;j<2;j++) printvt(vt,"%2.0f" ,obs[i].SNR[j]*0.25);
         for (j=0;j<2;j++) printvt(vt,"%2d"   ,obs[i].LLI[j]);
         printvt(vt,"\n");
     }
@@ -1168,7 +1175,7 @@ static void prstream(vt_t *vt)
         "-","serial","file","tcpsvr","tcpcli","udp","ntrips","ntripc","ftp","http"
     };
     const char *fmt[]={"rtcm2","rtcm3","oem4","oem3","ubx","ss2","hemis","skytreq",
-                       "","","","","","","sp3","","",""};
+                       "gw10","javad","lexr","","","","","sp3","","",""};
     const char *sol[]={"llh","xyz","enu","nmea"};
     stream_t stream[9];
     int i,format[9]={0};

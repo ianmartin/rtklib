@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 * ublox.c : ublox receiver dependent functions
 *
-*          Copyright (C) 2007-2009 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
 *
 * reference :
 *     [1] ublox-AG, GPS.G3-X-03002-D, ANTARIS Positioning Engine NMEA and UBX
@@ -14,7 +14,10 @@
 *           2009/04/10 1.3 refactored
 *           2009/09/25 1.4 add function gen_ubx()
 *           2010/01/17 1.5 add time tag adjustment option -tadj sec
-*           2010/10/31 1.6 fix bug on playback disabled for raw data
+*           2010/10/31 1.6 fix bug on playback disabled for raw data (2.4.0_p9)
+*           2011/05/27 1.4 add almanac decoding
+*                          add -EPHALL option
+*                          fix problem with ARM compiler
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -34,17 +37,31 @@
 #define FR8         8
 #define FS32        9
 
+static const char rcsid[]="$Id: ublox.c,v 1.2 2008/07/14 00:05:05 TTAKA Exp $";
+
+/* get/set fields (little-endian) --------------------------------------------*/
 #define U1(p)       (*((unsigned char  *)(p)))
 #define U2(p)       (*((unsigned short *)(p)))
 #define U4(p)       (*((unsigned int   *)(p)))
 #define I1(p)       (*((char   *)(p)))
 #define I2(p)       (*((short  *)(p)))
 #define I4(p)       (*((int    *)(p)))
-#define R8(p)       (*((double *)(p)))
 #define R4(p)       (*((float  *)(p)))
 
-static const char rcsid[]="$Id: ublox.c,v 1.2 2008/07/14 00:05:05 TTAKA Exp $";
-
+static double R8(const unsigned char *p)
+{
+    double value;
+    unsigned char *q=(unsigned char *)&value;
+    int i;
+    for (i=0;i<8;i++) *q++=*p++;
+    return value;
+}
+static void setR8(unsigned char *p, double value)
+{
+    unsigned char *q=(unsigned char *)&value;
+    int i;
+    for (i=0;i<8;i++) *p++=*q++;
+}
 /* checksum ------------------------------------------------------------------*/
 static int checksum(unsigned char *buff, int len)
 {
@@ -108,7 +125,7 @@ static int decode_rxmraw(raw_t *raw)
         raw->obs.data[n].P[0]  =R8(p+ 8)-toff*CLIGHT;
         raw->obs.data[n].D[0]  =R4(p+16);
         prn                    =U1(p+20);
-        raw->obs.data[n].SNR[0]=I1(p+22);
+        raw->obs.data[n].SNR[0]=(unsigned char)(I1(p+22)*4.0+0.5);
         raw->obs.data[n].LLI[0]=U1(p+23);
         raw->obs.data[n].code[0]=CODE_L1C;
         
@@ -146,7 +163,7 @@ static int save_subfrm(int sat, raw_t *raw)
     
     trace(4,"save_subfrm: sat=%2d id=%d\n",sat,id);
     
-    if (id<1||4<id) return 0;
+    if (id<1||5<id) return 0;
     
     q=raw->subfrm[sat-1]+(id-1)*30;
     
@@ -161,30 +178,35 @@ static int save_subfrm(int sat, raw_t *raw)
 static int decode_ephem(int sat, raw_t *raw)
 {
     eph_t eph={0};
-    double ion[8]={0},utc[4]={0};
-    int leaps=0;
     
     trace(4,"decode_ephem: sat=%2d\n",sat);
     
-    if (decode_frame(raw->subfrm[sat-1]   ,&eph,ion,utc,&leaps)!=1) return 0;
-    if (decode_frame(raw->subfrm[sat-1]+30,&eph,ion,utc,&leaps)!=2) return 0;
-    if (decode_frame(raw->subfrm[sat-1]+60,&eph,ion,utc,&leaps)!=3) return 0;
-    if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+    if (decode_frame(raw->subfrm[sat-1]   ,&eph,NULL,NULL,NULL,NULL)!=1||
+        decode_frame(raw->subfrm[sat-1]+30,&eph,NULL,NULL,NULL,NULL)!=2||
+        decode_frame(raw->subfrm[sat-1]+60,&eph,NULL,NULL,NULL,NULL)!=3) return 0;
+    
+    if (!strstr(raw->opt,"-EPHALL")) {
+        if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+    }
     eph.sat=sat;
     raw->nav.eph[sat-1]=eph;
     raw->ephsat=sat;
     return 2;
 }
-/* decode ionutc -------------------------------------------------------------*/
-static int decode_ionutc(int sat, raw_t *raw)
+/* decode almanac and ion/utc ------------------------------------------------*/
+static int decode_alm1(int sat, raw_t *raw)
 {
-    eph_t eph={0};
-    double *ion_gps=raw->nav.ion_gps,*utc_gps=raw->nav.utc_gps;
-    int *leaps=&raw->nav.leaps;
-    
-    trace(4,"decode_ionutc:\n");
-    
-    return decode_frame(raw->subfrm[sat-1]+90,&eph,ion_gps,utc_gps,leaps);
+    trace(4,"decode_alm1 : sat=%2d\n",sat);
+    decode_frame(raw->subfrm[sat-1]+90,NULL,raw->nav.alm,raw->nav.ion_gps,
+                 raw->nav.utc_gps,&raw->nav.leaps);
+    return 0;
+}
+/* decode almanac ------------------------------------------------------------*/
+static int decode_alm2(int sat, raw_t *raw)
+{
+    trace(4,"decode_alm2 : sat=%2d\n",sat);
+    decode_frame(raw->subfrm[sat-1]+120,NULL,raw->nav.alm,NULL,NULL,NULL);
+    return  0;
 }
 /* decode ublox rxm-sfrb: subframe buffer ------------------------------------*/
 static int decode_rxmsfrb(raw_t *raw)
@@ -209,7 +231,8 @@ static int decode_rxmsfrb(raw_t *raw)
     if (sys==SYS_GPS) {
         id=save_subfrm(sat,raw);
         if (id==3) return decode_ephem(sat,raw);
-        if (id==4) return decode_ionutc(sat,raw);
+        if (id==4) return decode_alm1 (sat,raw);
+        if (id==5) return decode_alm2 (sat,raw);
         return 0;
     }
     else if (sys==SYS_SBS) {
@@ -249,6 +272,7 @@ static int sync_ubx(unsigned char *buff, unsigned char data)
 * args   : raw_t *raw   IO     receiver raw data control struct
 *            raw->opt : u-blox raw options
 *                "-invcp" : inversed polarity of carrier-phase
+*                "-EPHALL"  : output all ephemerides
 *          unsigned char data I stream data (1 byte)
 * return : status (-1: error message, 0: no message, 1: input observation data,
 *                  2: input ephemeris, 3: input sbas message,
@@ -404,7 +428,7 @@ extern int gen_ubx(const char *msg, unsigned char *buff)
             case FI2 : I2(q)=j<narg?(short         )atoi(args[j]):0; q+=2; break;
             case FI4 : I4(q)=j<narg?(int           )atoi(args[j]):0; q+=4; break;
             case FR4 : R4(q)=j<narg?(float         )atof(args[j]):0; q+=4; break;
-            case FR8 : R8(q)=j<narg?(double        )atof(args[j]):0; q+=8; break;
+            case FR8 : setR8(q,j<narg?(double)atof(args[j]):0); q+=8; break;
             case FS32: sprintf((char *)q,"%-32.32s",j<narg?args[j]:""); q+=32; break;
         }
     }

@@ -79,6 +79,10 @@ __published:
 	TLabel *Label8;
 	TLabel *ConTime;
 	TLabel *Time;
+	TButton *BtnConv1;
+	TButton *BtnConv2;
+	TButton *BtnConv3;
+	TLabel *Label2;
 	void __fastcall BtnExitClick(TObject *Sender);
 	void __fastcall BtnInputClick(TObject *Sender);
 	void __fastcall BtnOutput1Click(TObject *Sender);
@@ -106,13 +110,20 @@ __published:
 	void __fastcall MenuStopClick(TObject *Sender);
 	void __fastcall MenuExitClick(TObject *Sender);
 	void __fastcall FormCreate(TObject *Sender);
+	void __fastcall BtnConv1Click(TObject *Sender);
+	void __fastcall BtnConv2Click(TObject *Sender);
+	void __fastcall BtnConv3Click(TObject *Sender);
+	void __fastcall FormShow(TObject *Sender);
 private:
+	AnsiString IniFile;
 	AnsiString Paths[4][4],Cmds[2];
 	AnsiString TcpHistory[MAXHIST],TcpMntpHist[MAXHIST];
 	AnsiString StaPosFile,ExeDirectory,LocalDirectory,SwapInterval;
-	int TraceLevel,SvrOpt[6],CmdEna[2],NmeaReq;
+	AnsiString ProxyAddress;
+	int TraceLevel,SvrOpt[6],CmdEna[2],NmeaReq,FileSwapMargin;
 	double NmeaPos[3];
 	gtime_t StartTime,EndTime;
+	
 	void __fastcall SerialOpt(int index, int opt);
 	void __fastcall TcpOpt(int index, int opt);
 	void __fastcall FileOpt(int index, int opt);
@@ -122,6 +133,8 @@ private:
 	void __fastcall SvrStop(void);
 	void __fastcall UpdateEnable(void);
 	void __fastcall SetTrayIcon(int index);
+	void __fastcall LoadOpt(void);
+	void __fastcall SaveOpt(void);
 public:
 	__fastcall TMainForm(TComponent* Owner);
 };

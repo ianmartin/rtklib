@@ -38,7 +38,7 @@ void __fastcall TPntDialog::FormShow(TObject *Sender)
 	PntList->DefaultRowHeight=17*FontScale/96;
 	
 	for (int i=0;i<PntList->RowCount;i++) {
-		if (i<Plot->NMapPnt) {
+		if (i<Plot->NWayPnt) {
 			ecef2pos(Plot->PntPos[i],pos);
 			PntList->Cells[0][i]=s.sprintf("%.9f",pos[0]*R2D);
 			PntList->Cells[1][i]=s.sprintf("%.9f",pos[1]*R2D);
@@ -65,7 +65,7 @@ void __fastcall TPntDialog::BtnOkClick(TObject *Sender)
 		pos2ecef(pos,Plot->PntPos[n]);
 		Plot->PntName[n++]=PntList->Cells[3][i];
 	}
-	Plot->NMapPnt=n;
+	Plot->NWayPnt=n;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPntDialog::BtnAddClick(TObject *Sender)

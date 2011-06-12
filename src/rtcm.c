@@ -20,7 +20,8 @@
 *           2009/12/04 1.2  support type 1010,1012,1020
 *           2010/07/15 1.3  support type 1057-1068 for ssr corrections
 *                           support type 1007,1008,1033 for antenna info
-*           2010/09/08 1.4  fix problem of ephemeris and ssr squence upset
+*           2010/09/08 1.4  fix problem of ephemeris and ssr sequence upset
+*                           (2.4.0_p8)
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -105,7 +106,7 @@ static int lossoflock(rtcm_t *rtcm, int sat, int freq, int lock)
 /* s/n ratio -----------------------------------------------------------------*/
 static unsigned char snratio(double snr)
 {
-    return (unsigned char)(snr<=0.0||255.5<=snr?0.0:snr+0.5);
+    return (unsigned char)(snr<=0.0||255.5<=snr?0.0:snr*4.0+0.5);
 }
 /* get observation data index ------------------------------------------------*/
 static int obsindex(obs_t *obs, gtime_t time, int sat)
@@ -1641,7 +1642,7 @@ extern void free_rtcm(rtcm_t *rtcm)
 {
     trace(3,"free_rtcm:\n");
     
-    /* free memory for observation and ephemris buffer */
+    /* free memory for observation and ephemeris buffer */
     free(rtcm->obs.data); rtcm->obs.data=NULL; rtcm->obs.n=0;
     free(rtcm->nav.eph ); rtcm->nav.eph =NULL; rtcm->nav.n=0;
     free(rtcm->nav.geph); rtcm->nav.geph=NULL; rtcm->nav.ng=0;

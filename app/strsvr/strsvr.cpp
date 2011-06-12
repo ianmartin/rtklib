@@ -14,6 +14,7 @@ USEFORM("..\appcmn\refdlg.cpp", RefDialog);
 USEFORM("..\appcmn\tcpoptdlg.cpp", TcpOptDialog);
 USEFORM("..\appcmn\keydlg.cpp", KeyDialog);
 USEFORM("..\appcmn\console.cpp", Console);
+USEFORM("convdlg.cpp", ConvDialog);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -33,6 +34,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->CreateForm(__classid(TTcpOptDialog), &TcpOptDialog);
 		Application->CreateForm(__classid(TKeyDialog), &KeyDialog);
 		Application->CreateForm(__classid(TConsole), &Console);
+		Application->CreateForm(__classid(TConvDialog), &ConvDialog);
 		Application->Run();
 	}
 	catch (Exception &exception)

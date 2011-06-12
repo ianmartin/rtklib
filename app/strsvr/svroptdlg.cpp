@@ -33,6 +33,7 @@ void __fastcall TSvrOptDialog::FormShow(TObject *Sender)
 	SvrBuffSize->Text=s.sprintf("%d",SvrOpt[3]);
 	SvrCycle->Text=s.sprintf("%d",SvrOpt[4]);
 	NmeaCycle->Text=s.sprintf("%d",SvrOpt[5]);
+	FileSwapMarginE->Text=s.sprintf("%d",FileSwapMargin);
 	if (norm(NmeaPos,3)>0.0) {
 		ecef2pos(NmeaPos,pos);
 		NmeaPos1->Text=s.sprintf("%.8f",pos[0]*R2D);
@@ -47,6 +48,7 @@ void __fastcall TSvrOptDialog::FormShow(TObject *Sender)
 	TraceLevelS->ItemIndex=TraceLevel;
 	NmeaReqT->Checked=NmeaReq;
 	LocalDir->Text=LocalDirectory;
+	ProxyAddr->Text=ProxyAddress;
 	
 	UpdateEnable();
 }
@@ -60,6 +62,7 @@ void __fastcall TSvrOptDialog::BtnOkClick(TObject *Sender)
 	SvrOpt[3]=SvrBuffSize->Text.ToInt();
 	SvrOpt[4]=SvrCycle->Text.ToInt();
 	SvrOpt[5]=NmeaCycle->Text.ToInt();
+	FileSwapMargin=FileSwapMarginE->Text.ToInt();
 	pos[0]=str2dbl(NmeaPos1->Text)*D2R;
 	pos[1]=str2dbl(NmeaPos2->Text)*D2R;
 	pos[2]=str2dbl(NmeaPos3->Text);
@@ -72,6 +75,7 @@ void __fastcall TSvrOptDialog::BtnOkClick(TObject *Sender)
 	TraceLevel=TraceLevelS->ItemIndex;
 	NmeaReq=NmeaReqT->Checked;
 	LocalDirectory=LocalDir->Text;
+	ProxyAddress=ProxyAddr->Text;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSvrOptDialog::BtnPosClick(TObject *Sender)

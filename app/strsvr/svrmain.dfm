@@ -5,7 +5,7 @@ object MainForm: TMainForm
   BorderStyle = bsSingle
   Caption = 'STRSVR'
   ClientHeight = 212
-  ClientWidth = 355
+  ClientWidth = 371
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,12 +15,13 @@ object MainForm: TMainForm
   OldCreateOrder = False
   OnClose = FormClose
   OnCreate = FormCreate
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object Panel3: TPanel
     Left = 0
     Top = 0
-    Width = 355
+    Width = 371
     Height = 187
     Align = alTop
     BevelOuter = bvNone
@@ -29,15 +30,75 @@ object MainForm: TMainForm
     object Panel1: TPanel
       Left = 1
       Top = 27
-      Width = 353
+      Width = 369
       Height = 128
       Align = alTop
       BevelInner = bvRaised
       BevelOuter = bvLowered
       TabOrder = 0
+      object Output3Bps: TLabel
+        Left = 300
+        Top = 104
+        Width = 57
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object Output2Bps: TLabel
+        Left = 300
+        Top = 81
+        Width = 57
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object Output1Bps: TLabel
+        Left = 300
+        Top = 58
+        Width = 57
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object InputBps: TLabel
+        Left = 300
+        Top = 24
+        Width = 57
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
       object Image1: TImage
-        Left = 6
-        Top = 28
+        Left = 4
+        Top = 30
         Width = 17
         Height = 85
         Picture.Data = {
@@ -129,10 +190,11 @@ object MainForm: TMainForm
           FFFFFFFFFFFFFF000000FFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFF
           000000000000000000000000FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFF
           FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000}
+        Proportional = True
         Transparent = True
       end
       object LabelInput: TLabel
-        Left = 38
+        Left = 34
         Top = 24
         Width = 43
         Height = 13
@@ -145,8 +207,8 @@ object MainForm: TMainForm
         ParentFont = False
       end
       object LabelOutput1: TLabel
-        Left = 38
-        Top = 54
+        Left = 34
+        Top = 58
         Width = 51
         Height = 13
         Caption = '(1) Output'
@@ -158,23 +220,23 @@ object MainForm: TMainForm
         ParentFont = False
       end
       object Label3: TLabel
-        Left = 122
+        Left = 116
         Top = 4
         Width = 24
         Height = 13
         Caption = 'Type'
       end
       object Label4: TLabel
-        Left = 180
+        Left = 176
         Top = 4
         Width = 18
         Height = 13
         Caption = 'Opt'
       end
       object InputByte: TLabel
-        Left = 224
+        Left = 220
         Top = 24
-        Width = 69
+        Width = 77
         Height = 13
         Alignment = taRightJustify
         AutoSize = False
@@ -187,22 +249,22 @@ object MainForm: TMainForm
         ParentFont = False
       end
       object Label6: TLabel
-        Left = 264
+        Left = 270
         Top = 4
         Width = 27
         Height = 13
         Caption = 'bytes'
       end
       object Label7: TLabel
-        Left = 320
+        Left = 340
         Top = 4
         Width = 17
         Height = 13
         Caption = 'bps'
       end
       object LabelOutput2: TLabel
-        Left = 38
-        Top = 77
+        Left = 34
+        Top = 81
         Width = 51
         Height = 13
         Caption = '(2) Output'
@@ -213,40 +275,10 @@ object MainForm: TMainForm
         Font.Style = []
         ParentFont = False
       end
-      object InputBps: TLabel
-        Left = 296
-        Top = 24
-        Width = 41
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
       object Output1Byte: TLabel
-        Left = 224
-        Top = 54
-        Width = 69
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output1Bps: TLabel
-        Left = 296
-        Top = 54
-        Width = 41
+        Left = 220
+        Top = 58
+        Width = 77
         Height = 13
         Alignment = taRightJustify
         AutoSize = False
@@ -259,24 +291,9 @@ object MainForm: TMainForm
         ParentFont = False
       end
       object Output2Byte: TLabel
-        Left = 224
-        Top = 77
-        Width = 69
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output2Bps: TLabel
-        Left = 296
-        Top = 77
-        Width = 41
+        Left = 220
+        Top = 81
+        Width = 77
         Height = 13
         Alignment = taRightJustify
         AutoSize = False
@@ -296,8 +313,8 @@ object MainForm: TMainForm
         Caption = 'Stream'
       end
       object LabelOutput3: TLabel
-        Left = 38
-        Top = 100
+        Left = 34
+        Top = 104
         Width = 51
         Height = 13
         Caption = '(3) Output'
@@ -309,24 +326,9 @@ object MainForm: TMainForm
         ParentFont = False
       end
       object Output3Byte: TLabel
-        Left = 224
-        Top = 100
-        Width = 69
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output3Bps: TLabel
-        Left = 296
-        Top = 100
-        Width = 41
+        Left = 220
+        Top = 104
+        Width = 77
         Height = 13
         Alignment = taRightJustify
         AutoSize = False
@@ -339,16 +341,24 @@ object MainForm: TMainForm
         ParentFont = False
       end
       object Label1: TLabel
-        Left = 202
+        Left = 198
         Top = 4
         Width = 21
         Height = 13
         Caption = 'Cmd'
       end
+      object Label2: TLabel
+        Left = 196
+        Top = 40
+        Width = 25
+        Height = 13
+        Caption = 'Conv'
+        Enabled = False
+      end
       object Input: TComboBox
-        Left = 94
+        Left = 92
         Top = 20
-        Width = 89
+        Width = 87
         Height = 21
         Style = csDropDownList
         ItemHeight = 13
@@ -366,9 +376,9 @@ object MainForm: TMainForm
           'HTTP')
       end
       object Output1: TComboBox
-        Left = 94
-        Top = 50
-        Width = 89
+        Left = 92
+        Top = 54
+        Width = 87
         Height = 21
         Style = csDropDownList
         ItemHeight = 13
@@ -384,7 +394,7 @@ object MainForm: TMainForm
           'File')
       end
       object BtnInput: TButton
-        Left = 182
+        Left = 178
         Top = 20
         Width = 19
         Height = 19
@@ -399,8 +409,8 @@ object MainForm: TMainForm
         OnClick = BtnInputClick
       end
       object BtnOutput1: TButton
-        Left = 182
-        Top = 50
+        Left = 178
+        Top = 54
         Width = 19
         Height = 19
         Caption = '...'
@@ -414,8 +424,8 @@ object MainForm: TMainForm
         OnClick = BtnOutput1Click
       end
       object BtnOutput2: TButton
-        Left = 182
-        Top = 73
+        Left = 178
+        Top = 77
         Width = 19
         Height = 19
         Caption = '...'
@@ -429,7 +439,7 @@ object MainForm: TMainForm
         OnClick = BtnOutput2Click
       end
       object IndInput: TPanel
-        Left = 22
+        Left = 20
         Top = 25
         Width = 12
         Height = 12
@@ -438,9 +448,9 @@ object MainForm: TMainForm
         TabOrder = 0
       end
       object Output2: TComboBox
-        Left = 94
-        Top = 73
-        Width = 89
+        Left = 92
+        Top = 77
+        Width = 87
         Height = 21
         Style = csDropDownList
         ItemHeight = 13
@@ -456,8 +466,8 @@ object MainForm: TMainForm
           'File')
       end
       object IndOutput1: TPanel
-        Left = 22
-        Top = 55
+        Left = 20
+        Top = 59
         Width = 12
         Height = 12
         BevelInner = bvRaised
@@ -465,8 +475,8 @@ object MainForm: TMainForm
         TabOrder = 4
       end
       object IndOutput2: TPanel
-        Left = 22
-        Top = 78
+        Left = 20
+        Top = 82
         Width = 12
         Height = 12
         BevelInner = bvRaised
@@ -474,9 +484,9 @@ object MainForm: TMainForm
         TabOrder = 7
       end
       object Output3: TComboBox
-        Left = 94
-        Top = 96
-        Width = 89
+        Left = 92
+        Top = 100
+        Width = 87
         Height = 21
         Style = csDropDownList
         ItemHeight = 13
@@ -492,8 +502,8 @@ object MainForm: TMainForm
           'File')
       end
       object BtnOutput3: TButton
-        Left = 182
-        Top = 96
+        Left = 178
+        Top = 100
         Width = 19
         Height = 19
         Caption = '...'
@@ -507,8 +517,8 @@ object MainForm: TMainForm
         OnClick = BtnOutput3Click
       end
       object IndOutput3: TPanel
-        Left = 22
-        Top = 101
+        Left = 20
+        Top = 105
         Width = 12
         Height = 12
         BevelInner = bvRaised
@@ -516,7 +526,7 @@ object MainForm: TMainForm
         TabOrder = 10
       end
       object BtnCmd: TButton
-        Left = 202
+        Left = 198
         Top = 20
         Width = 19
         Height = 19
@@ -530,11 +540,59 @@ object MainForm: TMainForm
         TabOrder = 3
         OnClick = BtnCmdClick
       end
+      object BtnConv1: TButton
+        Left = 198
+        Top = 54
+        Width = 19
+        Height = 19
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 13
+        OnClick = BtnConv1Click
+      end
+      object BtnConv2: TButton
+        Left = 198
+        Top = 77
+        Width = 19
+        Height = 19
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 14
+        OnClick = BtnConv2Click
+      end
+      object BtnConv3: TButton
+        Left = 198
+        Top = 100
+        Width = 19
+        Height = 19
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 15
+        OnClick = BtnConv3Click
+      end
     end
     object Panel4: TPanel
       Left = 1
       Top = 162
-      Width = 353
+      Width = 369
       Height = 24
       Align = alClient
       BevelInner = bvRaised
@@ -543,7 +601,7 @@ object MainForm: TMainForm
       object Message: TLabel
         Left = 4
         Top = 5
-        Width = 345
+        Width = 355
         Height = 13
         Alignment = taCenter
         AutoSize = False
@@ -558,7 +616,7 @@ object MainForm: TMainForm
         ParentFont = False
       end
       object BtnAbout: TSpeedButton
-        Left = 338
+        Left = 354
         Top = 4
         Width = 11
         Height = 17
@@ -604,7 +662,7 @@ object MainForm: TMainForm
         OnClick = BtnStrMonClick
       end
       object BtnTaskIcon: TSpeedButton
-        Left = 320
+        Left = 336
         Top = 4
         Width = 17
         Height = 17
@@ -644,7 +702,7 @@ object MainForm: TMainForm
     object Progress: TProgressBar
       Left = 1
       Top = 155
-      Width = 353
+      Width = 369
       Height = 7
       Align = alTop
       Smooth = True
@@ -654,15 +712,15 @@ object MainForm: TMainForm
     object Panel2: TPanel
       Left = 1
       Top = 1
-      Width = 353
+      Width = 369
       Height = 26
       Align = alTop
       BevelInner = bvRaised
       BevelOuter = bvLowered
       TabOrder = 3
       object Label8: TLabel
-        Left = 176
-        Top = 6
+        Left = 188
+        Top = 5
         Width = 81
         Height = 14
         Caption = 'Connect Time:'
@@ -674,8 +732,8 @@ object MainForm: TMainForm
         ParentFont = False
       end
       object ConTime: TLabel
-        Left = 273
-        Top = 6
+        Left = 289
+        Top = 5
         Width = 68
         Height = 14
         Alignment = taRightJustify
@@ -689,7 +747,7 @@ object MainForm: TMainForm
       end
       object Time: TLabel
         Left = 10
-        Top = 6
+        Top = 5
         Width = 154
         Height = 14
         Caption = '2010/01/01 00:00:00 GPST'
@@ -722,16 +780,16 @@ object MainForm: TMainForm
     OnClick = BtnStopClick
   end
   object BtnOpt: TButton
-    Left = 178
+    Left = 194
     Top = 188
     Width = 87
     Height = 23
-    Caption = '&Option...'
+    Caption = '&Options...'
     TabOrder = 2
     OnClick = BtnOptClick
   end
   object BtnExit: TButton
-    Left = 266
+    Left = 282
     Top = 188
     Width = 87
     Height = 23
@@ -742,18 +800,18 @@ object MainForm: TMainForm
   object Timer1: TTimer
     Interval = 50
     OnTimer = Timer1Timer
-    Left = 210
-    Top = 88
+    Left = 38
+    Top = 170
   end
   object Timer2: TTimer
     Interval = 100
     OnTimer = Timer2Timer
-    Left = 240
-    Top = 88
+    Left = 68
+    Top = 170
   end
   object PopupMenu: TPopupMenu
-    Left = 210
-    Top = 58
+    Left = 156
+    Top = 170
     object MenuExpand: TMenuItem
       Caption = 'E&xpand'
       OnClick = MenuExpandClick
@@ -827,12 +885,12 @@ object MainForm: TMainForm
       0000000000000000000000000000000000000000000000000000FFFF0000}
     OnDblClick = TrayIconDblClick
     OnMouseDown = TrayIconMouseDown
-    Left = 240
-    Top = 58
+    Left = 128
+    Top = 170
   end
   object ImageList: TImageList
-    Left = 240
-    Top = 28
+    Left = 98
+    Top = 170
     Bitmap = {
       494C010103000400040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010

@@ -4,11 +4,13 @@
 *          Copyright (C) 2010 by T.TAKASU, All rights reserved.
 *
 * version : $Revision:$ $Date:$
-* history : 2010/07/20  1.0  moved from postpos.c
+* history : 2010/07/20  1.1  moved from postpos.c
 *                            added api:
 *                                searchopt(),str2opt(),opt2str(),opt2buf(),
 *                                loadopts(),saveopts(),resetsysopts(),
 *                                getsysopts(),setsysopts()
+*           2010/09/11  1.2  add options
+*                                pos2-elmaskhold
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -19,16 +21,16 @@ static prcopt_t prcopt_;
 static solopt_t solopt_;
 static filopt_t filopt_;
 static int antpostype_[2];
-static double elmask_,elmaskar_;
+static double elmask_,elmaskar_,elmaskhold_;
 static double antpos_[2][3];
 static char exsats_[1024];
 
 /* system options table ------------------------------------------------------*/
 #define SWTOPT  "0:off,1:on"
 #define MODOPT  "0:single,1:dgps,2:kinematic,3:static,4:movingbase,5:fixed,6:ppp-kine,7:ppp-static"
-#define FRQOPT  "1:l1,2:l1+l2,3:l1+l2+l5"
+#define FRQOPT  "1:l1,2:l1+l2,3:l1+l2+l5,4:l1+l2+l5+l6,5:l1+l2+l5+l6+l7"
 #define TYPOPT  "0:forward,1:backward,2:combined"
-#define IONOPT  "0:off,1:brdc,2:sbas,3:dual-freq,4:est-stec"
+#define IONOPT  "0:off,1:brdc,2:sbas,3:dual-freq,4:est-stec,5:ionex-tec,6:qzs-brdc,7:qzs-lex,8:vtec_sf,9:vtec_ef,10:gtec"
 #define TRPOPT  "0:off,1:saas,2:sbas,3:est-ztd,4:est-ztdgrad"
 #define EPHOPT  "0:brdc,1:precise,2:brdc+sbas,3:brdc+ssrapc,4:brdc+ssrcom"
 #define NAVOPT  "1:gps+2:sbas+4:glo+8:gal+16:qzs+32:comp"
@@ -41,7 +43,7 @@ static char exsats_[1024];
 #define GEOOPT  "0:internal,1:egm96,2:egm08_2.5,3:egm08_1,4:gsi2000"
 #define STAOPT  "0:all,1:single"
 #define STSOPT  "0:off,1:state,2:residual"
-#define ARMOPT  "0:off,1:continous,2:instantaneous,3:fix-and-hold"
+#define ARMOPT  "0:off,1:continuous,2:instantaneous,3:fix-and-hold"
 #define POSOPT  "0:llh,1:xyz,2:single,3:posfile,4:rinexhead,5:rtcm"
 
 opt_t sysopts[]={
@@ -63,11 +65,13 @@ opt_t sysopts[]={
     {"pos2-arthres",    1,  (void *)&prcopt_.thresar,    ""     },
     {"pos2-arlockcnt",  0,  (void *)&prcopt_.minlock,    ""     },
     {"pos2-arelmask",   1,  (void *)&elmaskar_,          "deg"  },
-    {"pos2-aroutcnt",   0,  (void *)&prcopt_.maxout,     ""     },
     {"pos2-arminfix",   0,  (void *)&prcopt_.minfix,     ""     },
-    {"pos2-slipthres",  1,  (void *)&prcopt_.thresslip,  "m"    },
+    {"pos2-elmaskhold", 1,  (void *)&elmaskhold_,        "deg"  },
+    {"pos2-aroutcnt",   0,  (void *)&prcopt_.maxout,     ""     },
     {"pos2-maxage",     1,  (void *)&prcopt_.maxtdiff,   "s"    },
+    {"pos2-slipthres",  1,  (void *)&prcopt_.thresslip,  "m"    },
     {"pos2-rejionno",   1,  (void *)&prcopt_.maxinno,    "m"    },
+    {"pos2-rejgdop",    1,  (void *)&prcopt_.maxgdop,    ""     },
     {"pos2-niter",      0,  (void *)&prcopt_.niter,      ""     },
     {"pos2-baselen",    1,  (void *)&prcopt_.baseline[0],"m"    },
     {"pos2-basesig",    1,  (void *)&prcopt_.baseline[1],"m"    },
@@ -87,7 +91,8 @@ opt_t sysopts[]={
     {"out-nmeaintv2",   1,  (void *)&solopt_.nmeaintv[1],"s"    },
     {"out-outstat",     3,  (void *)&solopt_.sstat,      STSOPT },
     
-    {"stats-errratio",  1,  (void *)&prcopt_.err[0],     ""     },
+    {"stats-eratio1",   1,  (void *)&prcopt_.eratio[0],  ""     },
+    {"stats-eratio2",   1,  (void *)&prcopt_.eratio[1],  ""     },
     {"stats-errphase",  1,  (void *)&prcopt_.err[1],     "m"    },
     {"stats-errphaseel",1,  (void *)&prcopt_.err[2],     "m"    },
     {"stats-errphasebl",1,  (void *)&prcopt_.err[3],     "m/10km"},
@@ -127,6 +132,7 @@ opt_t sysopts[]={
     {"file-rcvantfile", 2,  (void *)&filopt_.rcvantp,    ""     },
     {"file-staposfile", 2,  (void *)&filopt_.stapos,     ""     },
     {"file-geoidfile",  2,  (void *)&filopt_.geoid,      ""     },
+    {"file-ionofile",   2,  (void *)&filopt_.iono,       ""     },
     {"file-dcbfile",    2,  (void *)&filopt_.dcb,        ""     },
     {"file-tempdir",    2,  (void *)&filopt_.tempdir,    ""     },
     {"file-geexefile",  2,  (void *)&filopt_.geexe,      ""     },
@@ -149,7 +155,9 @@ static int enum2str(char *s, const char *comment, int val)
     int n;
     
     n=sprintf(str,"%d:",val);
-    if (!(p=strstr(comment,str))) return 0;
+    if (!(p=strstr(comment,str))) {
+        return sprintf(s,"%d",val);
+    }
     if (!(q=strchr(p+n,','))&&!(q=strchr(p+n,')'))) {
         strcpy(s,p+n);
         return strlen(p+n);
@@ -163,7 +171,8 @@ static int str2enum(const char *str, const char *comment, int *val)
     char *p,s[128];
     
     if ((p=strstr(comment,str))&&*(p-1)==':') { /* string */
-       return sscanf(p-2,"%d",val)==1;
+       for (p-=2;'0'<=*p&&*p<='9';p--) ;
+       return sscanf(p+1,"%d",val)==1;
     }
     sprintf(s,"%s:",str);
     if ((p=strstr(comment,s))) { /* number */
@@ -325,11 +334,12 @@ extern int saveopts(const char *file, const char *mode, const char *comment,
 static void buff2sysopts(void)
 {
     double pos[3],*rr;
-    char buff[1024],*p;
+    char buff[1024],*p,*id;
     int i,sat,*ps;
     
-    prcopt_.elmin   =elmask_  *D2R;
-    prcopt_.elmaskar=elmaskar_*D2R;
+    prcopt_.elmin     =elmask_    *D2R;
+    prcopt_.elmaskar  =elmaskar_  *D2R;
+    prcopt_.elmaskhold=elmaskhold_*D2R;
     
     for (i=0;i<2;i++) {
         ps=i==0?&prcopt_.rovpos:&prcopt_.refpos;
@@ -355,8 +365,9 @@ static void buff2sysopts(void)
     if (exsats_[0]!='\0') {
         strcpy(buff,exsats_);
         for (p=strtok(buff," ");p;p=strtok(NULL," ")) {
-            if (!(sat=satid2no(p))) continue;
-            prcopt_.exsats[sat-1]=1;
+            if (*p=='+') id=p+1; else id=p;
+            if (!(sat=satid2no(id))) continue;
+            prcopt_.exsats[sat-1]=*p=='+'?2:1;
         }
     }
 }
@@ -367,8 +378,9 @@ static void sysopts2buff(void)
     char id[32],*p;
     int i,sat,*ps;
     
-    elmask_  =prcopt_.elmin   *R2D;
-    elmaskar_=prcopt_.elmaskar*R2D;
+    elmask_    =prcopt_.elmin     *R2D;
+    elmaskar_  =prcopt_.elmaskar  *R2D;
+    elmaskhold_=prcopt_.elmaskhold*R2D;
     
     for (i=0;i<2;i++) {
         ps=i==0?&prcopt_.rovpos:&prcopt_.refpos;
@@ -388,7 +400,8 @@ static void sysopts2buff(void)
     for (sat=1,p=exsats_;sat<=MAXSAT&&p-exsats_<sizeof(exsats_)-32;sat++) {
         if (prcopt_.exsats[sat-1]) {
             satno2id(sat,id);
-            p+=sprintf(p,"%s%s",p==exsats_?"":" ",id);
+            p+=sprintf(p,"%s%s%s",p==exsats_?"":" ",
+                       prcopt_.exsats[sat-1]==2?"+":"",id);
         }
     }
 }
@@ -415,6 +428,7 @@ extern void resetsysopts(void)
     for (i=0;i<2;i++) antpostype_[i]=0;
     elmask_=15.0;
     elmaskar_=0.0;
+    elmaskhold_=0.0;
     for (i=0;i<2;i++) for (j=0;j<3;j++) {
         antpos_[i][j]=0.0;
     }

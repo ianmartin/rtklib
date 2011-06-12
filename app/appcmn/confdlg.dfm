@@ -5,7 +5,7 @@ object ConfDialog: TConfDialog
   BorderStyle = bsDialog
   Caption = 'Confirmation'
   ClientHeight = 87
-  ClientWidth = 288
+  ClientWidth = 315
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,18 +17,18 @@ object ConfDialog: TConfDialog
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
-    Left = 8
+    Left = 4
     Top = 8
-    Width = 267
+    Width = 305
     Height = 13
     Alignment = taCenter
     AutoSize = False
     Caption = 'File exists. Overwrite it?'
   end
   object Label2: TLabel
-    Left = 8
+    Left = 4
     Top = 24
-    Width = 267
+    Width = 305
     Height = 37
     Alignment = taCenter
     AutoSize = False
@@ -41,8 +41,8 @@ object ConfDialog: TConfDialog
     WordWrap = True
   end
   object BtnOverwrite: TButton
-    Left = 66
-    Top = 64
+    Left = 82
+    Top = 65
     Width = 75
     Height = 21
     Caption = '&Overwrite'
@@ -56,8 +56,8 @@ object ConfDialog: TConfDialog
     TabOrder = 1
   end
   object BtnCancel: TButton
-    Left = 144
-    Top = 64
+    Left = 158
+    Top = 65
     Width = 75
     Height = 21
     Caption = '&Cancel'

@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 * crescent.c : hemisphere crescent/eclipse receiver dependent functions
 *
-*          Copyright (C) 2007-2009 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
 *
 * reference :
 *     [1] Hemisphere GPS, Grescent Integrator's Manual, December, 2005
@@ -14,6 +14,8 @@
 *                          fix bug on getting doppler observables
 *           2009/10/19 1.2 support eclipse (message bin 76)
 *           2009/10/24 1.3 ignore vaild phase flag
+*           2011/05/27 1.4 add -EPHALL option
+*                          fix problem with ARM compiler
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -29,16 +31,24 @@
 #define SNR2CN0_L1  30.0        /* crescent snr to c/n0 offset (db) L1 */
 #define SNR2CN0_L2  30.0        /* crescent snr to c/n0 offset (db) L2 */
 
+static const char rcsid[]="$Id: crescent.c,v 1.2 2008/07/14 00:05:05 TTAKA Exp $";
+
+/* get fields (little-endian) ------------------------------------------------*/
 #define U1(p)       (*((unsigned char *)(p)))
 #define U2(p)       (*((unsigned short *)(p)))
 #define U4(p)       (*((unsigned int *)(p)))
 #define I2(p)       (*((short *)(p)))
 #define I4(p)       (*((int *)(p)))
 #define R4(p)       (*((float *)(p)))
-#define R8(p)       (*((double *)(p)))
 
-static const char rcsid[]="$Id: crescent.c,v 1.2 2008/07/14 00:05:05 TTAKA Exp $";
-
+static double R8(const unsigned char *p)
+{
+    double value;
+    unsigned char *q=(unsigned char *)&value;
+    int i;
+    for (i=0;i<8;i++) *q++=*p++;
+    return value;
+}
 /* checksum ------------------------------------------------------------------*/
 static int chksum(const unsigned char *buff, int len)
 {
@@ -127,9 +137,9 @@ static int decode_cresraw(raw_t *raw)
         raw->obs.data[n].P[0]=pr;
         raw->obs.data[n].L[0]=cp/lam[0];
         raw->obs.data[n].D[0]=-(float)(dop/lam[0]);
-        raw->obs.data[n].SNR[0]=(unsigned char)(snr+0.5);
+        raw->obs.data[n].SNR[0]=(unsigned char)(snr*4.0+0.5);
         raw->obs.data[n].LLI[0]=(unsigned char)lli;
-		raw->obs.data[n].code[0]=CODE_L1C;
+        raw->obs.data[n].code[0]=CODE_L1C;
         
         for (j=1;j<NFREQ;j++) {
             raw->obs.data[n].L[j]=raw->obs.data[n].P[j]=0.0;
@@ -231,7 +241,7 @@ static int decode_cresraw2(raw_t *raw)
                 raw->obs.data[n].P[j]=pr[j]==0.0?0.0:pr[j]-toff;
                 raw->obs.data[n].L[j]=cp[j]==0.0?0.0:cp[j]-toff/lam[j];
                 raw->obs.data[n].D[j]=-(float)dop[j];
-                raw->obs.data[n].SNR[j]=(unsigned char)(snr[j]+0.5);
+                raw->obs.data[n].SNR[j]=(unsigned char)(snr[j]*4.0+0.5);
                 raw->obs.data[n].LLI[j]=(unsigned char)lli[j];
                 raw->obs.data[n].code[j]=j==0?CODE_L1C:CODE_L2P;
             }
@@ -252,9 +262,8 @@ static int decode_cresraw2(raw_t *raw)
 static int decode_creseph(raw_t *raw)
 {
     eph_t eph={0};
-    double ion[8],utc[4];
     unsigned int word;
-    int i,j,k,prn,sat,leaps;
+    int i,j,k,prn,sat;
     unsigned char *p=raw->buff+8,buff[90];
     
     trace(4,"decode_creseph: len=%d\n",raw->len);
@@ -272,13 +281,15 @@ static int decode_creseph(raw_t *raw)
         word=U4(p+8+i*40+j*4)>>6;
         for (k=0;k<3;k++) buff[i*30+j*3+k]=(unsigned char)((word>>(8*(2-k)))&0xFF);
     }
-    if (decode_frame(buff   ,&eph,ion,utc,&leaps)!=1||
-        decode_frame(buff+30,&eph,ion,utc,&leaps)!=2||
-        decode_frame(buff+60,&eph,ion,utc,&leaps)!=3) {
+    if (decode_frame(buff   ,&eph,NULL,NULL,NULL,NULL)!=1||
+        decode_frame(buff+30,&eph,NULL,NULL,NULL,NULL)!=2||
+        decode_frame(buff+60,&eph,NULL,NULL,NULL,NULL)!=3) {
         trace(2,"crescent bin 95 navigation frame error: prn=%d\n",prn);
         return -1;
     }
-    if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+    if (!strstr(raw->opt,"-EPHALL")) {
+        if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+    }
     eph.sat=sat;
     raw->nav.eph[sat-1]=eph;
     raw->ephsat=sat;
@@ -369,6 +380,8 @@ static int sync_cres(unsigned char *buff, unsigned char data)
 /* input cresent raw message ---------------------------------------------------
 * input next crescent raw message from stream
 * args   : raw_t *raw   IO     receiver raw data control struct
+*            raw->rcvopt : hemisphere raw options
+*                "-EPHALL"  : output all ephemerides
 *          unsigned char data I stream data (1 byte)
 * return : status (-1: error message, 0: no message, 1: input observation data,
 *                  2: input ephemeris, 3: input sbas message,

@@ -28,10 +28,10 @@
         <property category="build.config.1" name="settings.win32b" value="default"/>
         <property category="build.config.1" name="type" value="Toolset"/>
         <property category="build.config.1" name="win32.win32b.builddir" value="Release_Build"/>
-        <property category="build.node" name="libraries" value="vcl.lib rtl.lib"/>
+        <property category="build.node" name="libraries" value="vclx.lib vcl.lib rtl.lib"/>
         <property category="build.node" name="name" value="rtkconv.exe"/>
-        <property category="build.node" name="packages" value="vclx;vcl;rtl"/>
-        <property category="build.node" name="sparelibs" value="rtl.lib vcl.lib"/>
+        <property category="build.node" name="packages" value="vclx;vcl;rtl;dbrtl;vcldb"/>
+        <property category="build.node" name="sparelibs" value="rtl.lib vcl.lib vclx.lib"/>
         <property category="build.node" name="use_packages" value="0"/>
         <property category="build.platform" name="active" value="win32"/>
         <property category="build.platform" name="win32.Debug_Build.toolset" value="win32b"/>
@@ -137,11 +137,10 @@
           <property category="win32.*.win32b.bcc32" name="option.I.arg.1" value="..\appcmn"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.2" value="..\rtkpost"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.3" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.4" value="D:\proj\rtklib_2.1\app\rtkconv"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.5" value="$(BDS)\include"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.6" value="$(BDS)\include\dinkumware"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.7" value="$(BDS)\include\vcl"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.8" value="..\..\src"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.4" value="$(BDS)\include"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.5" value="$(BDS)\include\dinkumware"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.6" value="$(BDS)\include\vcl"/>
+          <property category="win32.*.win32b.bcc32" name="option.I.arg.7" value="..\..\src"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.I.enabled" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.Jgi.enabled" value="0"/>
@@ -173,43 +172,53 @@
           <property category="win32.*.win32b.bcc32" name="option.wpia.enabled" value="0"/>
           <property category="win32.*.win32b.brcc32" name="option.16.enabled" value="0"/>
           <property category="win32.*.win32b.brcc32" name="option.31.enabled" value="0"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.1" value="..\appcmn"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.2" value="..\rtkpost"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.3" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.4" value="..\..\src"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.5" value="D:\proj\rtklib_2.1\app\rtkconv"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.3" value="..\appcmn"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.4" value="..\rtkpost"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.5" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.6" value="..\..\src"/>
+          <property category="win32.*.win32b.dcc32" name="option.I.arg.7" value="D:\proj\rtklib_2.1\app\rtkconv"/>
           <property category="win32.*.win32b.dcc32" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.I.enabled" value="0"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.1" value="..\appcmn"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.2" value="..\rtkpost"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.3" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.4" value="..\..\src"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.5" value="D:\proj\rtklib_2.1\app\rtkconv"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.3" value="..\appcmn"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.4" value="..\rtkpost"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.5" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.6" value="..\..\src"/>
+          <property category="win32.*.win32b.dcc32" name="option.O.arg.7" value="D:\proj\rtklib_2.1\app\rtkconv"/>
           <property category="win32.*.win32b.dcc32" name="option.O.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.O.enabled" value="0"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.1" value="..\appcmn"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.2" value="..\rtkpost"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.3" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.4" value="..\..\src"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.5" value="D:\proj\rtklib_2.1\app\rtkconv"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.3" value="..\appcmn"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.4" value="..\rtkpost"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.5" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.6" value="..\..\src"/>
+          <property category="win32.*.win32b.dcc32" name="option.R.arg.7" value="D:\proj\rtklib_2.1\app\rtkconv"/>
           <property category="win32.*.win32b.dcc32" name="option.R.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.R.enabled" value="0"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.1" value="..\appcmn"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.2" value="..\rtkpost"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.3" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.4" value="..\..\src"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.5" value="D:\proj\rtklib_2.1\app\rtkconv"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.6" value="C:\Documents and Settings\TTAKA\My Documents\Borland Studio Projects"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.7" value="$(BDS)\lib"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.8" value="$(BDS)\lib\obj"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.10" value="$(BDS)\lib\obj"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.3" value="..\appcmn"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.4" value="..\rtkpost"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.5" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.6" value="..\..\src"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.7" value="D:\proj\rtklib_2.1\app\rtkconv"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.8" value="C:\Documents and Settings\TTAKA\My Documents\Borland Studio Projects"/>
+          <property category="win32.*.win32b.dcc32" name="option.U.arg.9" value="$(BDS)\lib"/>
           <property category="win32.*.win32b.dcc32" name="option.U.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.U.enabled" value="1"/>
           <property category="win32.*.win32b.dcc32" name="param.filenames.merge" value="1"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.1" value="..\appcmn"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.2" value="..\rtkpost"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.3" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.4" value="..\..\src"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.5" value="D:\proj\rtklib_2.1\app\rtkconv"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.3" value="..\appcmn"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.4" value="..\rtkpost"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.5" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.6" value="..\..\src"/>
+          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.7" value="D:\proj\rtklib_2.1\app\rtkconv"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="container.SelectedWarnings.containerenabled" value="1"/>
@@ -221,10 +230,9 @@
           <property category="win32.*.win32b.ilink32" name="option.L.arg.2" value="..\rtkpost"/>
           <property category="win32.*.win32b.ilink32" name="option.L.arg.3" value="..\..\src\rcv"/>
           <property category="win32.*.win32b.ilink32" name="option.L.arg.4" value="..\..\src"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.5" value="D:\proj\rtklib_2.1\app\rtkconv"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.6" value="$(BDS)\lib"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.7" value="$(BDS)\lib\obj"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.8" value="$(BDS)\lib\psdk"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.5" value="$(BDS)\lib"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.6" value="$(BDS)\lib\obj"/>
+          <property category="win32.*.win32b.ilink32" name="option.L.arg.7" value="$(BDS)\lib\psdk"/>
           <property category="win32.*.win32b.ilink32" name="option.L.arg.merge" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.L.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.Tpd.enabled" value="0"/>
@@ -233,11 +241,13 @@
           <property category="win32.*.win32b.ilink32" name="option.aa.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.ap.enabled" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.dynamicrtl.enabled" value="0"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.1" value="..\appcmn"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.2" value="..\rtkpost"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.3" value="..\..\src\rcv"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.4" value="..\..\src"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.5" value="D:\proj\rtklib_2.1\app\rtkconv"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.1" value="..\..\extlex"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.2" value="..\..\qzslex"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.3" value="..\appcmn"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.4" value="..\rtkpost"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.5" value="..\..\src\rcv"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.6" value="..\..\src"/>
+          <property category="win32.*.win32b.ilink32" name="option.j.arg.7" value="D:\proj\rtklib_2.1\app\rtkconv"/>
           <property category="win32.*.win32b.ilink32" name="option.j.arg.merge" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.j.enabled" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.m.enabled" value="0"/>
@@ -266,17 +276,20 @@
         <FILE FILENAME="..\appcmn\timedlg.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="timedlg" FORMNAME="TimeDialog" DESIGNCLASS="" ADDITIONAL="..\appcmn\timedlg.h"/>
         <FILE FILENAME="..\appcmn\confdlg.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="confdlg" FORMNAME="ConfDialog" DESIGNCLASS="" ADDITIONAL="..\appcmn\confdlg.h"/>
         <FILE FILENAME="startdlg.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="startdlg" FORMNAME="StartDialog" DESIGNCLASS="" ADDITIONAL="startdlg.h"/>
-        <FILE FILENAME="..\..\src\convrnx.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="convrnx" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="..\..\src\rcvraw.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="rcvraw" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="..\..\src\rinex.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="rinex" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="..\..\src\rtcm.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="rtcm" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="..\..\src\rtkcmn.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="rtkcmn" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="..\..\src\sbas.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="sbas" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="..\..\src\rcv\crescent.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="crescent" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rcv\gw10.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="gw10" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rcv\javad.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="javad" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="..\..\src\rcv\novatel.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="novatel" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rcv\skytraq.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="skytraq" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="..\..\src\rcv\ss2.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="ss2" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="..\..\src\rcv\ublox.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="ublox" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="..\..\src\rcv\skytraq.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="skytraq" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rtkcmn.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="rtkcmn" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\convrnx.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="convrnx" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rinex.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="rinex" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rtcm.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="rtcm" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\rcvraw.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="rcvraw" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\..\src\sbas.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="sbas" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="..\appcmn\keydlg.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="keydlg" FORMNAME="KeyDialog" DESIGNCLASS="" ADDITIONAL="..\appcmn\keydlg.h"/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>
@@ -327,22 +340,18 @@
           <Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
         </Parameters>
         <Excluded_Packages>
-          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dcldb100.bpl">Borland Database Components</Excluded_Packages>
-          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dcldbx100.bpl">Borland dbExpress Components</Excluded_Packages>
-          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclnet100.bpl">Borland Internet Components</Excluded_Packages>
-          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclmid100.bpl">Borland MyBase DataAccess Components</Excluded_Packages>
           <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\bin\dclado100.bpl">Borland ADO DB Components</Excluded_Packages>
-          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclsoap100.bpl">Borland SOAP Components</Excluded_Packages>
-          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dcldbxcds100.bpl">Borland SimpleDataset Component (DBX)</Excluded_Packages>
-          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclie100.bpl">Internet Explorer Components</Excluded_Packages>
-          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\bin\dclbde100.bpl">Borland BDE DB Components</Excluded_Packages>
           <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclib100.bpl">Borland InterBase Express Components</Excluded_Packages>
           <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclIntraweb_80_100.bpl">Intraweb 8.0 Design Package for Borland Development Studio 2006</Excluded_Packages>
           <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclindy100.bpl">Internet Direct Version 9 (Indy) Property and Component Editors</Excluded_Packages>
           <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\bcbofficexp100.bpl">Borland C++Builder Office XP Servers Package</Excluded_Packages>
           <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclbcbsmp100.bpl">Borland Sample Controls Design Time Package</Excluded_Packages>
+          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclsoap100.bpl">Borland SOAP Components</Excluded_Packages>
           <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\bcbie100.bpl">Borland C++Builder Internet Explorer 5 Components Package</Excluded_Packages>
           <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dcltee100.bpl">TeeChart Components</Excluded_Packages>
+          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dcldbxcds100.bpl">Borland SimpleDataset Component (DBX)</Excluded_Packages>
+          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dclie100.bpl">Internet Explorer Components</Excluded_Packages>
+          <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\bin\dclbde100.bpl">Borland BDE DB Components</Excluded_Packages>
         </Excluded_Packages>
         <Linker>
           <Linker Name="LibPrefix"></Linker>

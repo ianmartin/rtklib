@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 * sbas.c : sbas functions
 *
-*          Copyright (C) 2007-2010 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
 *
 * option : -DRRCENA  enable rrc correction
 *          
@@ -9,6 +9,9 @@
 *     [1] RTCA/DO-229C, Minimum operational performanc standards for global
 *         positioning system/wide area augmentation system airborne equipment,
 *         RTCA inc, November 28, 2001
+*     [2] IS-QZSS v.1.1, Quasi-Zenith Satellite System Navigation Service
+*         Interface Specification for QZSS, Japan Aerospace Exploration Agency,
+*         July 31, 2009
 *
 * version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
 * history : 2007/10/14 1.0  new
@@ -28,6 +31,9 @@
 *                           deleted api:
 *                               sbspntpos(),sbsupdatestat()
 *           2010/08/16 1.7  not reject udre==14 or give==15 correction message
+*                           (2.4.0_p4)
+*           2011/01/15 1.8  use api ionppp()
+*                           add prn mask of qzss for qzss L1SAIF
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -127,11 +133,14 @@ static int decode_sbstype1(const sbsmsg_t *msg, sbssat_t *sbssat)
     
     for (i=1,n=0;i<=210&&n<MAXSAT;i++) {
         if (getbitu(msg->msg,13+i,1)) {
-           if      (i<= 37) sat=satno(SYS_GPS,i);     /* gps */
-           else if (i<= 61) sat=satno(SYS_GLO,i-37);  /* glonass */
-           else if (i<=119) sat=0;                    /* future gnss */
-           else if (i<=138) sat=satno(SYS_SBS,i);     /* geo/waas */
-           else             sat=0;                    /* future gnss */
+           if      (i<= 37) sat=satno(SYS_GPS,i);    /*   0- 37: gps */
+           else if (i<= 61) sat=satno(SYS_GLO,i-37); /*  38- 61: glonass */
+           else if (i<=119) sat=0;                   /*  62-119: future gnss */
+           else if (i<=138) sat=satno(SYS_SBS,i);    /* 120-138: geo/waas */
+           else if (i<=182) sat=0;                   /* 139-182: reserved */
+           else if (i<=192) sat=satno(SYS_SBS,i+10); /* 183-192: qzss ref [2] */
+           else if (i<=202) sat=satno(SYS_QZS,i);    /* 193-202: qzss ref [2] */
+           else             sat=0;                   /* 203-   : reserved */
            sbssat->sat[n++].sat=sat;
         }
     }
@@ -249,8 +258,8 @@ static int decode_sbstype9(const sbsmsg_t *msg, nav_t *nav)
     if (!nav->seph||fabs(timediff(nav->seph[i].t0,seph.t0))<1E-3) { /* not change */
         return 0;
     }
-    nav->seph[MAXSBSSAT+i]=nav->seph[i]; /* previous */
-    nav->seph[i]=seph;                   /* current */
+    nav->seph[NSATSBS+i]=nav->seph[i]; /* previous */
+    nav->seph[i]=seph;                 /* current */
     
     trace(5,"decode_sbstype9: prn=%d\n",msg->prn);
     return 1;
@@ -408,7 +417,7 @@ static int decode_sbstype26(const sbsmsg_t *msg, sbsion_t *sbsion)
 * args   : sbsmg_t  *msg    I   sbas message
 *          nav_t    *nav    IO  navigation data
 * return : message type (-1: error or not supported type)
-* notes  : nav->seph must point to seph[MAXSBSSAT*2] (array of seph_t)
+* notes  : nav->seph must point to seph[NSATSBS*2] (array of seph_t)
 *               seph[prn-MINPRNSBS+1]          : sat prn current epehmeris 
 *               seph[prn-MINPRNSBS+1+MAXPRNSBS]: sat prn previous epehmeris 
 *-----------------------------------------------------------------------------*/
@@ -417,6 +426,8 @@ extern int sbsupdatecorr(const sbsmsg_t *msg, nav_t *nav)
     int type=getbitu(msg->msg,8,6),stat=-1;
     
     trace(3,"sbsupdatecorr: type=%d\n",type);
+    
+    if (msg->week==0) return -1;
     
     switch (type) {
         case  0: stat=decode_sbstype2 (msg,&nav->sbssat); break;
@@ -434,7 +445,7 @@ extern int sbsupdatecorr(const sbsmsg_t *msg, nav_t *nav)
         case 26: stat=decode_sbstype26(msg,nav ->sbsion); break;
         case 63: break; /* null message */
         
-        default: trace(2,"unsupported sbas message: type=%d\n",type); break;
+        /*default: trace(2,"unsupported sbas message: type=%d\n",type); break;*/
     }
     return stat?type:-1;
 }
@@ -442,6 +453,7 @@ extern int sbsupdatecorr(const sbsmsg_t *msg, nav_t *nav)
 static void readmsgs(const char *file, int sel, gtime_t ts, gtime_t te,
                      sbs_t *sbs)
 {
+    sbsmsg_t *sbs_msgs;
     int i,week,prn,ch,msg;
     unsigned int b;
     double tow,ep[6]={0};
@@ -489,11 +501,12 @@ static void readmsgs(const char *file, int sel, gtime_t ts, gtime_t te,
         
         if (sbs->n>=sbs->nmax) {
             sbs->nmax=sbs->nmax==0?1024:sbs->nmax*2;
-            if (!(sbs->msgs=(sbsmsg_t *)realloc(sbs->msgs,sbs->nmax*sizeof(sbsmsg_t)))) {
+            if (!(sbs_msgs=(sbsmsg_t *)realloc(sbs->msgs,sbs->nmax*sizeof(sbsmsg_t)))) {
                 trace(1,"readsbsmsg malloc error: nmax=%d\n",sbs->nmax);
-                sbs->n=sbs->nmax=0;
+                free(sbs->msgs); sbs->msgs=NULL; sbs->n=sbs->nmax=0;
                 return;
             }
+            sbs->msgs=sbs_msgs;
         }
         sbs->msgs[sbs->n].week=week;
         sbs->msgs[sbs->n].tow=(int)(tow+0.5);
@@ -655,7 +668,7 @@ extern int sbsioncorr(gtime_t time, const nav_t *nav, const double *pos,
 {
     const double re=6378.1363,hion=350.0;
     int i,err=0;
-    double cosa,cose,rp,ap,sinap,tanap,tanu,fp,posp[2],x=0.0,y=0.0,t,w[4]={0};
+    double fp,posp[2],x=0.0,y=0.0,t,w[4]={0};
     const sbsigp_t *igp[4]={0}; /* {ws,wn,es,en} */
     
     trace(4,"sbsioncorr: pos=%.3f %.3f azel=%.3f %.3f\n",pos[0]*R2D,pos[1]*R2D,
@@ -665,22 +678,7 @@ extern int sbsioncorr(gtime_t time, const nav_t *nav, const double *pos,
     if (pos[2]<-100.0||azel[1]<=0) return 1;
     
     /* ipp (ionospheric pierce point) position */
-    cosa=cos(azel[0]); cose=cos(azel[1]);
-    rp=re/(re+hion)*cose;
-    ap=PI/2.0-azel[1]-asin(rp);
-    sinap=sin(ap);
-    tanap=tan(ap);
-    tanu =tan(PI/2.0-pos[0]);
-    posp[0]=asin(sin(pos[0])*cos(ap)+cos(pos[0])*sinap*cosa);
-    
-    if ((pos[0]> 70.0*D2R&& tanap*cosa>tanu)||
-        (pos[0]<-70.0*D2R&&-tanap*cosa>tanu)) {
-        posp[1]=pos[1]+PI-asin(sinap*sin(azel[0])/cos(posp[0]));
-    }
-    else {
-        posp[1]=pos[1]+asin(sinap*sin(azel[0])/cos(posp[0]));
-    }
-    fp=1.0/sqrt(1.0-rp*rp);
+    fp=ionppp(pos,azel,re,hion,posp);
     
     /* search igps around ipp */
     searchigp(time,posp,nav->sbsion,igp,&x,&y);
@@ -807,6 +805,9 @@ static int sbslongcorr(gtime_t time, int sat, const sbssat_t *sbssat,
         
         return 1;
     }
+    /* if sbas satellite without correction, no correction applied */
+    if (satsys(sat,NULL)==SYS_SBS) return 1;
+    
     trace(2,"no sbas long-term correction: %s sat=%2d\n",time_str(time,0),sat);
     return 0;
 }
@@ -861,10 +862,10 @@ static int sbsfastcorr(gtime_t time, int sat, const sbssat_t *sbssat,
 extern int sbssatcorr(gtime_t time, int sat, const nav_t *nav, double *rs,
                       double *dts, double *var)
 {
-    double drs[3],dclk,prc;
+    double drs[3]={0},dclk=0.0,prc=0.0;
     int i;
     
-    trace(3,"sbssatcorr: sat=%2d\n",sat);
+    trace(3,"sbssatcorr : sat=%2d\n",sat);
     
     /* sbas long term corrections */
     if (!sbslongcorr(time,sat,&nav->sbssat,drs,&dclk)) {

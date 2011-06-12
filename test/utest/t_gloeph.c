@@ -25,8 +25,8 @@ static void dumpgeph(geph_t *geph, int n)
 /* readrnx() */
 void utest1(void)
 {
-    char file1[]="../data/brdd0910.09g";
-    char file2[]="../data/brdc0910.09g";
+    char file1[]="../data/rinex/brdd0910.09g";
+    char file2[]="../data/rinex/brdc0910.09g";
     nav_t nav={0};
     
     readrnx(file1,1,NULL,&nav,NULL);
@@ -40,8 +40,8 @@ void utest1(void)
 /* readsp3() */
 void utest2(void)
 {
-    char *file1="../data/igl15253.sp4";
-    char *file2="../data/igl15253.sp3";
+    char *file1="../data/sp3/igl15253.sp4";
+    char *file2="../data/sp3/igl15253.sp3";
     nav_t nav={0};
     double tow,*pos;
     int i,week,sat;
@@ -68,13 +68,13 @@ void utest2(void)
 void utest3(void)
 {
     gtime_t time;
-    char file[]="../data/brdc0910.09g";
+    char file[]="../data/rinex/brdc0910.09g";
     nav_t nav={0};
     double ep[]={2009,4,1,0,0,0};
     double tspan=86400.0,tint=30.0,tow;
     double rs[6],dts[2];
     double var;
-    int i,sat,week;
+    int i,sat,week,svh;
     
     sat=satno(SYS_GLO,7);
     
@@ -82,7 +82,7 @@ void utest3(void)
     
     for (i=0;i<tspan/tint;i++) {
         time=timeadd(epoch2time(ep),tint*i);
-        satpos(time,time,sat,EPHOPT_BRDC,&nav,rs,dts,&var);
+        satpos(time,time,sat,EPHOPT_BRDC,&nav,rs,dts,&var,&svh);
         tow=time2gpst(time,&week);
         printf("%4d %6.0f %2d %13.3f %13.3f %13.3f %10.3f\n",
                week,tow,sat,rs[0],rs[1],rs[2],dts[0]*1E9);
@@ -99,13 +99,13 @@ void utest3(void)
 void utest4(void)
 {
     gtime_t time;
-    char *file="../data/igl15253.sp3";
+    char *file="../data/sp3/igl15253.sp3";
     nav_t nav={0};
     double ep[]={2009,4,1,0,0,0};
     double tspan=86400.0,tint=30.0,tow;
     double rs[6],dts[2];
     double var;
-    int i,sat,week;
+    int i,sat,week,svh;
     
     sat=satno(SYS_GLO,7);
     
@@ -113,7 +113,7 @@ void utest4(void)
     
     for (i=0;i<tspan/tint;i++) {
         time=timeadd(epoch2time(ep),tint*i);
-        satpos(time,time,sat,EPHOPT_PREC,&nav,rs,dts,&var);
+        satpos(time,time,sat,EPHOPT_PREC,&nav,rs,dts,&var,&svh);
         tow=time2gpst(time,&week);
         printf("%4d %6.0f %2d %13.3f %13.3f %13.3f %10.3f\n",
                week,tow,sat,rs[0],rs[1],rs[2],dts[0]*1E9);
@@ -149,9 +149,13 @@ void utest5(void)
 void utest6(void)
 {
     FILE *fp;
-    char *file1="../data/brdc0910.09g";
-    char *file2="../data/igl15253.sp3";
+    char *file1="../data/rinex/brdc0910.09g";
+    char *file2="../data/sp3/igl15253.sp3";
     char *file3="../../data/igs05.atx";
+/*
+    char *file4="../data/esa15253.sp3";
+    char *file5="../data/esa15253.clk";
+*/
     char *outfile="testgloeph.out";
     double ep[]={2009,4,1,0,0,0};
     double tspan=86400.0,tint=30.0,tow;
@@ -159,21 +163,28 @@ void utest6(void)
     double var1,var2;
     gtime_t time=epoch2time(ep);
     nav_t nav={0};
-    int i,j,sat,week;
+    int i,j,sat,week,svh1,svh2;
     
     readrnx(file1,1,NULL,&nav,NULL);
     readsp3(file2,&nav);
+/*
+    readsp3(file4,&nav);
+    readrnxc(file5,&nav);
+*/
     readsap(file3,time,&nav);
     
+/*
     sat=satno(SYS_GLO,21);
+*/
+    sat=satno(SYS_GLO,22);
     
     fp=fopen(outfile,"w");
     
     for (i=0;i<tspan/tint;i++) {
         time=timeadd(epoch2time(ep),tint*i);
         tow=time2gpst(time,&week);
-        satpos(time,time,sat,EPHOPT_BRDC,&nav,rs1,dts1,&var1);
-        satpos(time,time,sat,EPHOPT_PREC,&nav,rs2,dts2,&var2);
+        satpos(time,time,sat,EPHOPT_BRDC,&nav,rs1,dts1,&var1,&svh1);
+        satpos(time,time,sat,EPHOPT_PREC,&nav,rs2,dts2,&var2,&svh2);
         
         if (norm(rs1,3)<=0.0||norm(rs2,3)<=0.0) continue;
         

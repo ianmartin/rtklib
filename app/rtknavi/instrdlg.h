@@ -52,6 +52,10 @@ __published:
 	TButton *BtnStr3;
 	TComboBox *Format3;
 	TButton *BtnCmd3;
+	TButton *BtnRcvOpt1;
+	TButton *BtnRcvOpt2;
+	TButton *BtnRcvOpt3;
+	TLabel *Label1;
 	void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnStr1Click(TObject *Sender);
@@ -72,6 +76,9 @@ __published:
 	void __fastcall BtnStr3Click(TObject *Sender);
 	void __fastcall BtnFile3Click(TObject *Sender);
 	void __fastcall BtnCmd3Click(TObject *Sender);
+	void __fastcall BtnRcvOpt1Click(TObject *Sender);
+	void __fastcall BtnRcvOpt2Click(TObject *Sender);
+	void __fastcall BtnRcvOpt3Click(TObject *Sender);
 private:
 	AnsiString __fastcall GetFilePath(AnsiString path);
 	AnsiString __fastcall SetFilePath(AnsiString path);
@@ -83,6 +90,7 @@ public:
 	int StreamC[3],Stream[3],Format[3],CmdEna[3][2],NmeaReq,TimeTag,NRcv;
 	double NmeaPos[2];
 	AnsiString Paths[3][4],Cmds[3][2],TimeStart,TimeSpeed;
+	AnsiString RcvOpt[3];
 	AnsiString History[10],MntpHist[10];
 	__fastcall TInputStrDialog(TComponent* Owner);
 };

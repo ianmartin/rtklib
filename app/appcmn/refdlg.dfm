@@ -58,9 +58,9 @@ object RefDialog: TRefDialog
     BevelOuter = bvNone
     TabOrder = 1
     object BtnLoad: TButton
-      Left = 4
+      Left = 2
       Top = 2
-      Width = 67
+      Width = 65
       Height = 21
       Caption = '&Load'
       TabOrder = 0
@@ -75,9 +75,9 @@ object RefDialog: TRefDialog
       BevelOuter = bvNone
       TabOrder = 1
       object BtnOK: TButton
-        Left = 0
+        Left = 4
         Top = 2
-        Width = 67
+        Width = 65
         Height = 21
         Caption = '&OK'
         ModalResult = 1
@@ -85,36 +85,38 @@ object RefDialog: TRefDialog
         OnClick = BtnOKClick
       end
       object BtnCancel: TButton
-        Left = 68
+        Left = 70
         Top = 2
-        Width = 67
+        Width = 65
         Height = 21
         Caption = '&Cancel'
         ModalResult = 2
         TabOrder = 1
       end
     end
-    object FormatS: TComboBox
-      Left = 72
+    object BtnFind: TButton
+      Left = 202
       Top = 2
-      Width = 83
+      Width = 31
       Height = 21
-      Style = csDropDownList
-      ItemHeight = 13
-      ItemIndex = 0
+      Caption = 'Find'
       TabOrder = 2
-      Text = 'Lat/Lon/Hgt'
-      OnChange = FormatSChange
-      Items.Strings = (
-        'Lat/Lon/Hgt'
-        'SINEX')
+      OnClick = BtnFindClick
+    end
+    object FindStr: TEdit
+      Left = 112
+      Top = 2
+      Width = 89
+      Height = 21
+      TabOrder = 3
+      OnKeyPress = FindStrKeyPress
     end
   end
   object OpenDialog: TOpenDialog
-    Filter = 'All (*.*)|*.*'
+    Filter = 'Position File (*.pos,*.snx)|*.pos;*.snx|All (*.*)|*.*'
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     OptionsEx = [ofExNoPlacesBar]
-    Left = 260
-    Top = 414
+    Left = 222
+    Top = 336
   end
 end

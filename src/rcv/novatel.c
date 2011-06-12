@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 * notvatel.c : NovAtel OEM4/OEM3 receiver functions
 *
-*          Copyright (C) 2007-2010 by T.TAKASU, All rights reserved.
+*          Copyright (C) 2007-2011 by T.TAKASU, All rights reserved.
 *
 * reference :
 *     [1] NovAtel, OM-20000094 Rev6 OEMV Family Firmware Reference Manual, 2008
@@ -21,6 +21,10 @@
 *                          invalid if parity unknown in GLONASS range
 *                          fix bug of dopper polarity inversion for oem3 regd
 *           2010/04/29 1.7 add tod field in geph_t
+*           2011/05/27 1.4 support RAWALM for oem4/v
+*                          add almanac decoding
+*                          add -EPHALL option
+*                          fix problem on ARM compiler
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
@@ -56,21 +60,29 @@ static const char rcsid[]="$Id: novatel.c,v 1.2 2008/07/14 00:05:05 TTAKA Exp $"
 #define ID_RGEB     32          /* message id: oem3 range measurement */
 #define ID_RGED     65          /* message id: oem3 range compressed */
 
-#define U1(p)       (*((unsigned char *)(p)))
-#define I1(p)       (*((char *)(p)))
-#define U2(p)       (*((unsigned short *)(p)))
-#define I2(p)       (*((short *)(p)))
-#define U4(p)       (*((unsigned int *)(p)))
-#define I4(p)       (*((int *)(p)))
-#define R8(p)       (*((double *)(p)))
-#define R4(p)       (*((float *)(p)))
-
 #define WL1         0.1902936727984
 #define WL2         0.2442102134246
 #define MAXVAL      8388608.0
 
 #define OFF_FRQNO   -7          /* F/W ver.3.620 */
 
+/* get fields (little-endian) ------------------------------------------------*/
+#define U1(p)       (*((unsigned char *)(p)))
+#define I1(p)       (*((char *)(p)))
+#define U2(p)       (*((unsigned short *)(p)))
+#define I2(p)       (*((short *)(p)))
+#define U4(p)       (*((unsigned int *)(p)))
+#define I4(p)       (*((int *)(p)))
+#define R4(p)       (*((float *)(p)))
+
+static double R8(const unsigned char *p)
+{
+    double value;
+    unsigned char *q=(unsigned char *)&value;
+    int i;
+    for (i=0;i<8;i++) *q++=*p++;
+    return value;
+}
 /* extend sign ---------------------------------------------------------------*/
 static int exsign(unsigned int v, int bits)
 {
@@ -203,7 +215,7 @@ static int decode_rangecmpb(raw_t *raw)
             raw->obs.data[index].P  [freq]=psr;
             raw->obs.data[index].D  [freq]=(float)dop;
             raw->obs.data[index].SNR[freq]=
-                0.0<=snr&&snr<255.0?(unsigned char)(snr+0.5):0;
+                0.0<=snr&&snr<255.0?(unsigned char)(snr*4.0+0.5):0;
             raw->obs.data[index].LLI[freq]=(unsigned char)lli;
             raw->obs.data[index].code[freq]=
                 type== 0?CODE_L1C:
@@ -288,7 +300,7 @@ static int decode_rangeb(raw_t *raw)
             raw->obs.data[index].P  [freq]=psr;
             raw->obs.data[index].D  [freq]=(float)dop;
             raw->obs.data[index].SNR[freq]=
-                0.0<=snr&&snr<255.0?(unsigned char)(snr+0.5):0;
+                0.0<=snr&&snr<255.0?(unsigned char)(snr*4.0+0.5):0;
             raw->obs.data[index].LLI[freq]=(unsigned char)lli;
             raw->obs.data[index].code[freq]=
                 type== 0?CODE_L1C:
@@ -312,8 +324,7 @@ static int decode_rawephemb(raw_t *raw)
 {
     unsigned char *p=raw->buff+OEM4HLEN;
     eph_t eph={0};
-    double ion[8]={0},utc[4]={0};
-    int prn,sat,leaps=0;
+    int prn,sat;
     
     trace(3,"decode_rawephemb: len=%d\n",raw->len);
     
@@ -326,13 +337,15 @@ static int decode_rawephemb(raw_t *raw)
         trace(2,"oem4 rawephemb satellite number error: prn=%d\n",prn);
         return -1;
     }
-    if (decode_frame(p+12,&eph,ion,utc,&leaps)!=1||
-        decode_frame(p+42,&eph,ion,utc,&leaps)!=2||
-        decode_frame(p+72,&eph,ion,utc,&leaps)!=3) {
+    if (decode_frame(p+ 12,&eph,NULL,NULL,NULL,NULL)!=1||
+        decode_frame(p+ 42,&eph,NULL,NULL,NULL,NULL)!=2||
+        decode_frame(p+ 72,&eph,NULL,NULL,NULL,NULL)!=3) {
         trace(2,"oem4 rawephemb subframe error: prn=%d\n",prn);
         return -1;
     }
-    if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+    if (!strstr(raw->opt,"-EPHALL")) {
+        if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+    }
     eph.sat=sat;
     raw->nav.eph[sat-1]=eph;
     raw->ephsat=sat;
@@ -422,8 +435,10 @@ static int decode_gloephemerisb(raw_t *raw)
     else if (tof>tow+43200.0) tof-=86400.0;
     geph.tof=gpst2time(week,tof);
     
-    if (fabs(timediff(geph.toe,raw->nav.geph[prn-1].toe))<1.0&&
-        geph.svh==raw->nav.geph[prn-1].svh) return 0; /* unchanged */
+    if (!strstr(raw->opt,"-EPHALL")) {
+        if (fabs(timediff(geph.toe,raw->nav.geph[prn-1].toe))<1.0&&
+            geph.svh==raw->nav.geph[prn-1].svh) return 0; /* unchanged */
+    }
     geph.sat=sat;
     raw->nav.geph[prn-1]=geph;
     raw->ephsat=sat;
@@ -482,7 +497,7 @@ static int decode_rgeb(raw_t *raw)
             raw->obs.data[index].P  [freq]=psr;
             raw->obs.data[index].D  [freq]=(float)dop;
             raw->obs.data[index].SNR[freq]=
-                0.0<=snr&&snr<255.0?(unsigned char)(snr+0.5):0;
+                0.0<=snr&&snr<255.0?(unsigned char)(snr*4.0+0.5):0;
             raw->obs.data[index].LLI[freq]=(unsigned char)lli;
             raw->obs.data[index].code[freq]=freq==0?CODE_L1C:CODE_L2P;
         }
@@ -549,7 +564,7 @@ static int decode_rged(raw_t *raw)
             raw->obs.data[index].L  [freq]=adr;
             raw->obs.data[index].P  [freq]=psr;
             raw->obs.data[index].D  [freq]=(float)dop;
-            raw->obs.data[index].SNR[freq]=(unsigned char)snr;
+            raw->obs.data[index].SNR[freq]=(unsigned char)(snr*4.0+0.5);
             raw->obs.data[index].LLI[freq]=(unsigned char)lli;
             raw->obs.data[index].code[freq]=freq==0?CODE_L1C:CODE_L2P;
         }
@@ -562,8 +577,7 @@ static int decode_repb(raw_t *raw)
 {
     unsigned char *p=raw->buff+OEM3HLEN;
     eph_t eph={0};
-    double ion[8]={0},utc[4]={0};
-    int prn,sat,leaps=0;
+    int prn,sat;
     
     trace(3,"decode_repb: len=%d\n",raw->len);
     
@@ -576,13 +590,15 @@ static int decode_repb(raw_t *raw)
         trace(2,"oem3 repb satellite number error: prn=%d\n",prn);
         return -1;
     }
-    if (decode_frame(p+ 4,&eph,ion,utc,&leaps)!=1||
-        decode_frame(p+34,&eph,ion,utc,&leaps)!=2||
-        decode_frame(p+64,&eph,ion,utc,&leaps)!=3) {
+    if (decode_frame(p+ 4,&eph,NULL,NULL,NULL,NULL)!=1||
+        decode_frame(p+34,&eph,NULL,NULL,NULL,NULL)!=2||
+        decode_frame(p+64,&eph,NULL,NULL,NULL,NULL)!=3) {
         trace(2,"oem3 repb subframe error: prn=%d\n",prn);
         return -1;
     }
-    if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+    if (!strstr(raw->opt,"-EPHALL")) {
+        if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+    }
     eph.sat=sat;
     raw->nav.eph[sat-1]=eph;
     raw->ephsat=sat;
@@ -715,6 +731,8 @@ static int sync_oem3(unsigned char *buff, unsigned char data)
 * fetch next novatel oem4/oem3 raw data and input a mesasge from stream
 * args   : raw_t *raw   IO     receiver raw data control struct
 *          unsigned char data I stream data (1 byte)
+*            raw->rcvopt : novatel raw options
+*                "-EPHALL"  : output all ephemerides
 * return : status (-1: error message, 0: no message, 1: input observation data,
 *                  2: input ephemeris, 3: input sbas message,
 *                  9: input ion/utc parameter)
